@@ -145,10 +145,9 @@ python_exe: "python"
 
 **6. 准备数据**
 
-```bash
-# 克隆 Qlib 仓库（如果还没有）
-git clone https://github.com/microsoft/qlib.git
+> **注意**: Qlib 源码已包含在项目的 `qlib/` 目录中，无需单独克隆。
 
+```bash
 # 导出数据（选择其一）
 python qlib_code/sql2csv.py        # 从数据库导出
 # 或
@@ -209,7 +208,7 @@ csv_daily_dir: "${base_dir}/daily"
 
 # Qlib 相关路径
 provider_uri: "${base_dir}/qlib_bin"
-qlib_workdir: "../qlib"
+qlib_workdir: "./qlib"  # Qlib 源码在项目内
 
 # 模型和预测路径
 model_path: "${base_dir}/models/trained_model"
@@ -325,6 +324,8 @@ qlib_sql-master/
 │   ├── utils/                           # 工具函数
 │   └── *.m                              # MATLAB 脚本
 │
+├── qlib/                                # Qlib 源码（已包含在项目中）
+│
 ├── qlib_code/                           # Python 代码
 │   ├── run_daily_update.py              # 日常流水线入口
 │   ├── update_new.py                    # 预测生成脚本
@@ -342,6 +343,7 @@ qlib_sql-master/
 ├── main_history.m                       # 历史预测入口（MATLAB）
 ├── requirements.txt                     # Python 依赖
 ├── record_temp.py                       # Qlib 补丁文件
+├── setup_config.py                      # 配置文件初始化脚本
 ├── .gitignore                           # Git 忽略文件
 └── README.md                            # 本文档
 ```
@@ -397,12 +399,14 @@ cp Optimizer_matlab/config/config_db.example.m Optimizer_matlab/config/config_db
 
 **Q: 找不到 qlib 的 dump_bin.py？**
 
-```bash
-# 确保已克隆 qlib
-git clone https://github.com/microsoft/qlib.git
+> Qlib 源码已包含在项目的 `qlib/` 目录中。
 
-# 在 config/paths.yaml 中配置 qlib_workdir 路径
+确保 `config/paths.yaml` 中的配置正确：
+```yaml
+qlib_workdir: "./qlib"  # 指向项目内的 qlib 目录
 ```
+
+dump_bin.py 位置：`qlib/scripts/dump_bin.py`
 
 **Q: 应用 Qlib 补丁失败？**
 

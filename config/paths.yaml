@@ -32,13 +32,13 @@ csv_daily_dir: "${base_dir}/daily"
 # Qlib 二进制数据存储路径
 provider_uri: "${base_dir}/qlib_bin"
 
-# Qlib 仓库克隆路径
-# 推荐克隆到项目外部，避免污染项目目录
-# 示例：
+# Qlib 仓库路径
+# 注意：qlib 已包含在项目中，使用项目内的相对路径
+# 如果需要使用外部 qlib，可以修改为：
+#   - 相对路径（项目外）: "../qlib"
 #   - Linux/Mac: "${HOME}/qlib"
 #   - Windows: "${USERPROFILE}\\qlib"
-#   - 相对路径: "../qlib"
-qlib_workdir: "../qlib"
+qlib_workdir: "./qlib"
 
 # ============================================
 # 模型相关路径
