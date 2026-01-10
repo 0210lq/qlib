@@ -51,7 +51,7 @@
   - `db.yaml` — 数据库连接配置（用于 Python / Matlab 的导入器）
   - `db.example.yaml` — 数据库配置示例文件
 
-- `logs/` — 运行日志
+- `logs/` — 运行日志（自动创建）
   - `score_prediction_日期.log` — 生成预测分数时候的log
   - `weight_optimizer_日期.log` — 优化得到权重时候的log
 

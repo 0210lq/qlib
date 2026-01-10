@@ -131,6 +131,10 @@ def main():
         default_log_path = WORKDIR.parent / "logs" / f"score_prediction_{log_date.strftime('%Y%m%d')}.log"
         args.log_file = str(default_log_path)
 
+    # 确保日志目录存在
+    log_file_path = Path(args.log_file)
+    log_file_path.parent.mkdir(parents=True, exist_ok=True)
+
     # Open log file and tee stdout/stderr so output is also saved locally.
     log_f = None
     original_stdout = sys.stdout
