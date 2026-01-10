@@ -1,0 +1,256 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+*.manifest
+*.spec
+pip-log.txt
+pip-delete-this-directory.txt
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+.hypothesis/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
+cython_debug/
+*.cover
+*.log
+*.pot
+*.pyc
+*.pyo
+*.pyd
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+*.swp
+*.swo
+*~
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb_checkpoints/
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# PEP 582
+__pypackages__/
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# pytype static type analyzer
+.pytype/
+
+# Cython debug symbols
+cython_debug/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*.sublime-project
+*.sublime-workspace
+.DS_Store
+*.code-workspace
+
+# MATLAB
+*.asv
+*.m~
+*.autosave
+*.fig
+*.mat
+*.mexw32
+*.mexw64
+*.mexa64
+*.mexmaci64
+*.mexmaca64
+simulinkcache/
+slprj/
+*.slxc
+*.slxp
+*.slx.autosave
+
+# Project specific
+logs/
+*.log
+temp/
+tmp/
+*.csv
+*.xlsx
+*.xls
+!config/**/*.xlsx
+*.pdf
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.db
+*.sqlite
+*.sqlite3
+
+# Data directories (根据 paths.yaml 中的路径，这些通常包含大量数据文件)
+# 注意：如果这些目录在项目内，取消注释下面的行
+# csv_data/
+# daily/
+# qlib_bin/
+# qlib_output/
+# E:/
+
+# Model files
+*.pkl
+*.h5
+*.hdf5
+*.ckpt
+*.pt
+*.pth
+*.onnx
+*.pb
+*.tflite
+*.joblib
+
+# MLflow
+mlruns/
+mlartifacts/
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Windows
+*.lnk
+*.tmp
+*.temp
+
+# Backup files
+*.bak
+*.backup
+*.old
+*.orig
+*.save
+
+# Compiled files
+*.class
+*.dll
+*.exe
+*.o
+*.a
+*.lib
+*.dylib
+
+# Archives
+*.7z
+*.dmg
+*.gz
+*.iso
+*.jar
+*.rar
+*.tar
+*.zip
+
+# Database
+*.db-journal
+*.sqlite-shm
+*.sqlite-wal
+
+# Secrets and credentials
+*.key
+*.pem
+*.p12
+*.pfx
+secrets.yaml
+.secrets
+credentials.json
+config.json
+
+# Configuration files with sensitive data
+config/db.yaml
+Optimizer_matlab/config/config_db.m
+
+# Keep example files
+!config/db.example.yaml
+!Optimizer_matlab/config/config_db.example.m
+!config/paths.yaml
+
+# Temporary Python scripts
+clean_requirements.py
+test_*.py
+*_test.py
+!**/test_*.py
+
