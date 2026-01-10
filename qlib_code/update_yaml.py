@@ -39,8 +39,8 @@ def read_best_params_from_db(db_config_path):
 
 import re
 
-def update_yaml(yaml_file_path, best_params):
- 
+def update_yaml(yaml_file_path, best_params, provider_uri=None):
+
     # 读取原始内容
     with open(yaml_file_path, 'r', encoding='utf-8') as f:
         content = f.read()
@@ -138,10 +138,10 @@ def update_yaml(yaml_file_path, best_params):
         ("start_time", test_start, "backtest:"),
         ("end_time", test_end, "backtest:")
     ]
-    
+
     for param_name, param_value, section in backtest_updates:
         if param_value:
-        
+
             pattern = rf'({re.escape(section)}[^\n]*\n(?:\s+[^\n]*\n)*?\s+{param_name}:\s*)(\d{{4}}-\d{{2}}-\d{{2}})(\s*#.*)?'
             replacement = rf'\g<1>{param_value}\3'
             if re.search(pattern, updated_content):
@@ -149,6 +149,22 @@ def update_yaml(yaml_file_path, best_params):
             else:
                 print(f"警告: 未找到{section}部分的{param_name}")
 
+    # 更新qlib_init中的provider_uri（如果提供）
+    if provider_uri:
+        # 匹配 qlib_init 部分的 provider_uri
+        # 支持双引号、单引号或无引号的路径
+        provider_pattern = r'(qlib_init:(?:\s*\n(?:[ \t]*[^\n]*\n)*?\s*)provider_uri:\s*["\']?)([^"\'\n]+)(["\']?)'
+
+        if re.search(provider_pattern, updated_content):
+            # 保留原有的引号风格
+            updated_content = re.sub(
+                provider_pattern,
+                rf'\g<1>{provider_uri}\g<3>',
+                updated_content
+            )
+            print(f"✅ 已更新 provider_uri: {provider_uri}")
+        else:
+            print("⚠️  警告: 未找到 qlib_init.provider_uri 配置项")
 
     # 写回文件
     with open(yaml_file_path, 'w', encoding='utf-8') as f:
@@ -179,11 +195,16 @@ if __name__ == "__main__":
 
     latest_params = read_best_params_from_db(db_config_path)
 
-    # 更新YAML文件
-    if update_yaml(yaml_file_path, latest_params):
+    # 从 paths.yaml 读取 provider_uri
+    provider_uri = cfg.get('provider_uri')
+    if provider_uri:
+        print(f"📁 从配置文件读取 provider_uri: {provider_uri}")
 
-        print(f"成功更新YAML文件")
+    # 更新YAML文件
+    if update_yaml(yaml_file_path, latest_params, provider_uri=provider_uri):
+
+        print(f"✅ 成功更新YAML文件: {yaml_file_path}")
     else:
-        print("更新YAML文件失败")
+        print("❌ 更新YAML文件失败")
         
 

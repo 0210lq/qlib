@@ -225,6 +225,38 @@ python_exe: "python"
 
 详细配置说明请参考 `config/paths.example.yaml` 文件中的注释。
 
+### 配置管理工具
+
+#### Provider URI 同步
+
+为了避免配置不一致，`provider_uri` (Qlib 数据路径) 统一在 `config/paths.yaml` 中管理。
+
+修改数据路径后，需要同步到 workflow 配置文件：
+
+```bash
+# 方法 1: 只同步路径配置（推荐）
+python qlib_code/sync_provider_uri.py
+
+# 方法 2: 同步路径并更新模型参数（需要数据库连接）
+python qlib_code/update_yaml.py
+```
+
+**工作流程：**
+
+```
+config/paths.yaml (主配置)
+        ↓ (自动同步)
+qlib_code/workflow_config_lightgbm.yaml
+        ↓ (qrun 使用)
+    Qlib 数据加载
+```
+
+**注意事项：**
+- ✅ 修改 `config/paths.yaml` 后运行同步脚本
+- ❌ 不要直接修改 `workflow_config_lightgbm.yaml` 的 `provider_uri`
+
+详细说明请参考 [Provider URI 配置管理指南](docs/provider_uri_config_guide.md)。
+
 ## 使用方法
 
 ### 1. 日常预测流水线

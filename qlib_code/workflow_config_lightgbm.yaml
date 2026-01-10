@@ -1,4 +1,10 @@
 qlib_init:
+    # 数据路径配置
+    # 注意：此路径应与 config/paths.yaml 中的 provider_uri 保持一致
+    # 修改数据路径后，运行以下命令自动同步：
+    #   python qlib_code/sync_provider_uri.py
+    # 或使用 update_yaml.py 更新（会同时更新模型参数）：
+    #   python qlib_code/update_yaml.py
     provider_uri: "E:\\qlib_data\\tushare_qlib_data\\qlib_bin"
     region: cn
 market: &market all
