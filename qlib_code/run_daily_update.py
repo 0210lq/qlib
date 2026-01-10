@@ -173,10 +173,19 @@ def main():
         env_for_update_latest["TARGET_PREDICT_DATE"] = args.date
     run_cmd([py, str(update_latest_days_script)], env=env_for_update_latest)
 
-    
-    latest_csv_path = str(_latest_subdir(base_csv_dir))
+    # 确定 CSV 数据目录
     if getattr(args, "data_csv_dir", None) is None:
-        args.data_csv_dir = latest_csv_path
+        if getattr(args, "date", None):
+            # 如果指定了日期，直接使用对应的目录
+            date_str = args.date.replace("-", "")  # 2026-01-09 → 20260109
+            csv_path = base_csv_dir / date_str
+            args.data_csv_dir = str(csv_path)
+            print(f"使用指定日期的数据目录: {args.data_csv_dir}")
+        else:
+            # 没有指定日期，使用最新修改的子目录
+            latest_csv_path = str(_latest_subdir(base_csv_dir))
+            args.data_csv_dir = latest_csv_path
+            print(f"使用最新的数据目录: {args.data_csv_dir}")
 
     dump_script = Path(args.dump_script)
     # If the provided dump_script doesn't exist, try qlib_workdir/scripts/dump_bin.py
@@ -189,10 +198,25 @@ def main():
 
     print("转换数据格式...")
 
-    dump_cmd = [py, str(dump_script), "dump_update", "--data_path", args.data_csv_dir,
+    # 智能判断使用 dump_all 还是 dump_update
+    # 检查 qlib_bin_dir 是否已经初始化（是否存在 calendars/day.txt）
+    qlib_bin_path = Path(args.qlib_bin_dir)
+    calendar_file = qlib_bin_path / "calendars" / "day.txt"
+
+    if calendar_file.exists():
+        # 已有数据，使用增量更新
+        dump_mode = "dump_update"
+        print(f"检测到已有 Qlib 数据，使用增量更新模式 (dump_update)")
+    else:
+        # 首次运行或数据不完整，使用全量导入
+        dump_mode = "dump_all"
+        print(f"未检测到 Qlib 数据或数据不完整，使用全量导入模式 (dump_all)")
+        print(f"  缺失文件: {calendar_file}")
+
+    dump_cmd = [py, str(dump_script), dump_mode, "--data_path", args.data_csv_dir,
                 "--qlib_dir", args.qlib_bin_dir,
                 "--include_fields", args.include_fields]
-    
+
     if not Path(qlib_workdir).exists():
         print(f"Warning: qlib_workdir {qlib_workdir} does not exist. Attempting to run anyway.")
     run_cmd(dump_cmd, cwd=str(qlib_workdir))
