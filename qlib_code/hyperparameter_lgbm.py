@@ -63,6 +63,7 @@ if __name__ == "__main__":
     sys.path.append(custom_path )
     
     from time_utils import last_workday_auto, last_workday_calculate
+
     last_workday = last_workday_auto()
 
     test_end = str(last_workday)

@@ -5,9 +5,9 @@ market: &market all
 benchmark: &benchmark 000300.sh
 data_handler_config: &data_handler_config
     start_time: 2023-01-01
-    end_time: 2026-01-09
+    end_time: 2026-01-08
     fit_start_time: 2023-01-01
-    fit_end_time: 2026-01-05
+    fit_end_time: 2026-01-04
     instruments: *market
     
 port_analysis_config: &port_analysis_config
@@ -20,8 +20,8 @@ port_analysis_config: &port_analysis_config
             n_drop: 5
             risk_degree: 1.0
     backtest:
-        start_time: 2026-01-08
-        end_time: 2026-01-09
+        start_time: 2026-01-07
+        end_time: 2026-01-08
         account: 100000000
         benchmark: *benchmark
         exchange_kwargs:
@@ -59,9 +59,9 @@ task:
                 module_path: qlib.contrib.data.handler
                 kwargs: *data_handler_config
             segments:
-                train: [2023-01-01, 2026-01-05]
-                valid: [2026-01-06, 2026-01-07]
-                test: [2026-01-08, 2026-01-09]
+                train: [2023-01-01, 2026-01-04]
+                valid: [2026-01-05, 2026-01-06]
+                test: [2026-01-07, 2026-01-08]
     record: 
         - class: SignalRecord
           module_path: qlib.workflow.record_temp
