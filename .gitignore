@@ -241,12 +241,13 @@ config.json
 
 # Configuration files with sensitive data
 config/db.yaml
+config/paths.yaml
 Optimizer_matlab/config/config_db.m
 
 # Keep example files
 !config/db.example.yaml
+!config/paths.example.yaml
 !Optimizer_matlab/config/config_db.example.m
-!config/paths.yaml
 
 # Temporary Python scripts
 clean_requirements.py
