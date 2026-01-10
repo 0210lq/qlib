@@ -264,7 +264,7 @@ qlib_code/workflow_config_lightgbm.yaml
 **方式一：使用 Python**
 
 ```bash
-python qlib_code/run_daily_update.py --date 2025-10-27
+python qlib_code/run_daily_update.py --date 2026-01-09
 ```
 
 **方式二：使用 MATLAB（推荐）**
