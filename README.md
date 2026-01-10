@@ -210,8 +210,8 @@ csv_daily_dir: "${base_dir}/daily"
 provider_uri: "${base_dir}/qlib_bin"
 qlib_workdir: "./qlib"  # Qlib 源码在项目内
 
-# 模型和预测路径
-model_path: "${base_dir}/models/trained_model"
+# 模型和预测路径（推荐使用项目内路径）
+model_path: "./models/trained_model.pkl"  # 项目内模型路径，避免复制
 prediction_output_dir: "${base_dir}/output/prediction"
 
 # Python 执行路径（推荐使用 "python" 自动检测）

@@ -44,12 +44,16 @@ qlib_workdir: "./qlib"
 # 模型相关路径
 # ============================================
 
-# 训练好的模型存放路径
-# 可以使用相对路径或绝对路径
-# 示例：
-#   - 相对路径: "./models/trained_model"
-#   - 绝对路径: "${base_dir}/models/trained_model"
-model_path: "${base_dir}/models/trained_model"
+# 训练好的模型存放路径（推荐使用项目内路径）
+# 使用项目内相对路径，避免复制模型文件到外部目录
+#
+# 推荐路径：
+#   - "./models/trained_model.pkl" - 项目内 models 目录
+#   - "./mlruns/<experiment_id>/<run_id>/artifacts/model.pkl" - MLflow 默认路径
+#
+# 示例（不推荐使用外部路径）：
+#   - "${base_dir}/models/trained_model" - 需要复制模型到项目外
+model_path: "./models/trained_model.pkl"
 
 # 预测结果（score 文件）存放路径
 prediction_output_dir: "${base_dir}/output/prediction"
