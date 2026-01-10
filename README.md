@@ -566,6 +566,35 @@ echo $env:CONDA_PREFIX  # Windows PowerShell
 cat logs/score_prediction_*.log
 ```
 
+**Q: 运行 hyperparameter_lgbm.py 遇到内存错误？**
+
+错误信息示例：
+```
+MemoryError: Unable to allocate 452. KiB for an array
+ImportError: DLL load failed: 页面文件太小，无法完成操作
+```
+
+**快速解决方案**：
+
+1. **增加 Windows 虚拟内存**（推荐）：
+   - 按 `Win + R`，输入 `sysdm.cpl`
+   - 高级 → 性能设置 → 高级 → 虚拟内存 → 更改
+   - 设置为物理内存的 1.5-3 倍
+   - 重启计算机
+
+2. **减少训练数据范围**：
+   ```python
+   # 编辑 qlib_code/hyperparameter_lgbm.py
+   train_start = "2024-01-01"  # 改为更近的日期
+   ```
+
+3. **限制股票范围**：
+   ```python
+   "instruments": "csi300",  # 改为 "csi300" 或 "sse50"
+   ```
+
+详细说明请参考：[内存优化与故障排查指南](docs/memory_optimization_guide.md)
+
 ### 性能优化
 
 **Q: 依赖安装速度慢？**

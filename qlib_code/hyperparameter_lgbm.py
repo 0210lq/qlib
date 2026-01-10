@@ -55,7 +55,14 @@ if __name__ == "__main__":
     cfg = load_config_with_substitution(config_path)
     provider_uri = cfg['provider_uri']
 
-    qlib.init(provider_uri=provider_uri, region="cn")
+    # 减少并行工作进程数以降低内存使用
+    # 设置为1表示不使用并行处理，适合内存较小的环境
+    os.environ['QLIB_NUM_WORKERS'] = '1'
+    os.environ['NUMEXPR_MAX_THREADS'] = '1'
+    os.environ['OMP_NUM_THREADS'] = '1'
+    os.environ['MKL_NUM_THREADS'] = '1'
+
+    qlib.init(provider_uri=provider_uri, region="cn", kernels=1)
 
     global_tools = cfg["global_tools"]
 
@@ -72,6 +79,8 @@ if __name__ == "__main__":
     test_start = str(last_workday_calculate(last_workday2))
     valid_end = test_start
     valid_start = str(last_workday_calculate(valid_end))
+    # 注意: 训练数据范围较大会消耗大量内存
+    # 如果遇到内存错误，可以缩短 train_start 日期（例如改为 "2024-01-01"）
     train_start = "2023-01-01"
     train_end = str(last_workday_calculate(valid_start))
 
