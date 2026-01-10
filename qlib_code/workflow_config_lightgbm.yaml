@@ -5,9 +5,9 @@ market: &market all
 benchmark: &benchmark 000300.sh
 data_handler_config: &data_handler_config
     start_time: 2023-01-01
-    end_time: 2023-03-02 
+    end_time: 2023-03-02
     fit_start_time: 2023-01-01
-    fit_end_time: 
+    fit_end_time: 2023-02-24  # 与训练集结束时间一致
     instruments: *market
     
 port_analysis_config: &port_analysis_config
