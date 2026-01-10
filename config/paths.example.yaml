@@ -53,7 +53,7 @@ qlib_workdir: "./qlib"
 #
 # 示例（不推荐使用外部路径）：
 #   - "${base_dir}/models/trained_model" - 需要复制模型到项目外
-model_path: "./models/trained_model.pkl"
+model_path: "./models/trained_model"
 
 # 预测结果（score 文件）存放路径
 prediction_output_dir: "${base_dir}/output/prediction"

@@ -135,7 +135,7 @@ base_dir: "../qlib_data"
 qlib_workdir: "./qlib"
 
 # 模型路径（推荐使用项目内路径）
-model_path: "./models/trained_model.pkl"
+model_path: "./models/trained_model"
 
 # Python 执行路径（使用当前激活的环境）
 python_exe: "python"
