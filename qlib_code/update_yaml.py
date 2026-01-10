@@ -160,23 +160,28 @@ def update_yaml(yaml_file_path, best_params):
 
 if __name__ == "__main__":
     from config_utils import load_config_with_substitution
-    db_config_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'config', 'db.yaml'))
-    
-    config_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'config', 'paths.yaml'))
+
+    # 获取项目根目录（qlib_code 的上一级目录）
+    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+
+    db_config_path = os.path.join(project_root, 'config', 'db.yaml')
+    config_path = os.path.join(project_root, 'config', 'paths.yaml')
+
     cfg = load_config_with_substitution(config_path)
     yaml_file_path = cfg['yaml_path']
 
+    # 如果是相对路径，相对于项目根目录解析
     if not os.path.isabs(yaml_file_path):
-        yaml_file_path = os.path.abspath(os.path.join(os.path.dirname(config_path), yaml_file_path))
+        yaml_file_path = os.path.abspath(os.path.join(project_root, yaml_file_path))
 
     if not os.path.exists(yaml_file_path):
         raise FileNotFoundError(f"YAML 配置文件不存在: {yaml_file_path}")
 
     latest_params = read_best_params_from_db(db_config_path)
-     
+
     # 更新YAML文件
     if update_yaml(yaml_file_path, latest_params):
-      
+
         print(f"成功更新YAML文件")
     else:
         print("更新YAML文件失败")
