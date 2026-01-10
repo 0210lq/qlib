@@ -95,4 +95,4 @@ python_exe: "python"
 yaml_matlab: "./YAMLMatlab_0.4.3"
 
 # 全局工具配置
-global_tools: "GLOBAL_TOOLSFUNC"
+global_tools: "GLOBAL_TOOLSFUNC_new"

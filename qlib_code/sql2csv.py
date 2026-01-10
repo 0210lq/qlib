@@ -410,7 +410,6 @@ class QlibDataConverter:
     
 
 def main():
-   
     cfg_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'config', 'paths.yaml'))
     cfg = load_config_with_substitution(cfg_path)
 
