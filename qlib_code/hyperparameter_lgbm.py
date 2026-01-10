@@ -67,8 +67,9 @@ if __name__ == "__main__":
     last_workday = last_workday_auto()
 
     test_end = str(last_workday)
-
-    test_start = str(last_workday_calculate(last_workday))
+    last_workday1 = str(last_workday_calculate(test_end))
+    last_workday2 = str(last_workday_calculate(last_workday1))
+    test_start = str(last_workday_calculate(last_workday2))
     valid_end = test_start
     valid_start = str(last_workday_calculate(valid_end))
     train_start = "2023-01-01"

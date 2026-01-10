@@ -7,7 +7,7 @@ data_handler_config: &data_handler_config
     start_time: 2023-01-01
     end_time: 2026-01-08
     fit_start_time: 2023-01-01
-    fit_end_time: 2026-01-04
+    fit_end_time: 2025-12-31
     instruments: *market
     
 port_analysis_config: &port_analysis_config
@@ -38,17 +38,17 @@ task:
         module_path: qlib.contrib.model.gbdt
         kwargs:
             loss: mse
-            colsample_bytree: 0.8844312925041713
-            learning_rate: 0.34389420163873474
-            subsample: 0.08377779110301342
-            lambda_l1: 0.058431447025967656
-            lambda_l2: 35.42300072397281
-            num_leaves: 775
-            feature_fraction: 0.7195004122657256
-            bagging_fraction: 0.6448954268663576
-            bagging_freq: 7
-            min_data_in_leaf: 22
-            min_child_samples: 63
+            colsample_bytree: 0.7719977776954766
+            learning_rate: 0.07898892598431795
+            subsample: 0.6895633934838533
+            lambda_l1: 8.780103579048659e-06
+            lambda_l2: 1.1381108970595143e-08
+            num_leaves: 27
+            feature_fraction: 0.5566228049605826
+            bagging_fraction: 0.40015270709406303
+            bagging_freq: 3
+            min_data_in_leaf: 29
+            min_child_samples: 54
             max_depth: 10
     dataset:
         class: DatasetH
@@ -59,7 +59,7 @@ task:
                 module_path: qlib.contrib.data.handler
                 kwargs: *data_handler_config
             segments:
-                train: [2023-01-01, 2026-01-04]
+                train: [2023-01-01, 2025-12-31]
                 valid: [2026-01-05, 2026-01-06]
                 test: [2026-01-07, 2026-01-08]
     record: 
