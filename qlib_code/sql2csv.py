@@ -413,23 +413,33 @@ def main():
     cfg_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'config', 'paths.yaml'))
     cfg = load_config_with_substitution(cfg_path)
 
+    # 获取项目根目录
+    script_dir = Path(__file__).resolve().parent
+    project_root = script_dir.parent
+
     output_dir = cfg['csv_output_dir']
 
     converter = QlibDataConverter(output_dir)
-    
+
     market = 'ALL'
     start_date = '20150101'
-    end_date = date.today().strftime('%Y%m%d') 
+    end_date = date.today().strftime('%Y%m%d')
     batch_size = 1000
 
     converter.process_all_stocks(market=market, start_date=start_date, end_date=end_date, batch_size=batch_size)
-    
+
 
     converter.process_all_indices(market=market, start_date=start_date, end_date=end_date)
     logging.info("数据获取完成")
     logging.info("开始转换数据格式")
 
-    DEFAULT_QLIB_PATH = cfg["qlib_workdir"]
+    # 处理 qlib_workdir：如果是相对路径，转换为相对于项目根目录的绝对路径
+    qlib_workdir_raw = Path(cfg["qlib_workdir"])
+    if not qlib_workdir_raw.is_absolute():
+        DEFAULT_QLIB_PATH = str((project_root / qlib_workdir_raw).resolve())
+    else:
+        DEFAULT_QLIB_PATH = str(qlib_workdir_raw)
+
     DEFAULT_QLIB_DIR = cfg["provider_uri"]
     DEFAULT_FIELDS = "open,close,high,low,volume,factor,money"
     

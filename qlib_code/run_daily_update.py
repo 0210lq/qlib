@@ -10,6 +10,7 @@ from datetime import datetime, date
 from config_utils import load_config_with_substitution
 
 WORKDIR = Path(__file__).resolve().parent
+PROJECT_ROOT = WORKDIR.parent  # 项目根目录
 cfg_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'config', 'paths.yaml'))
 cfg = load_config_with_substitution(cfg_path)
 
@@ -29,7 +30,13 @@ def _latest_subdir(base: Path) -> Path:
         return base
 
 qlib_bin_dir = cfg['provider_uri']
-qlib_workdir = Path(cfg['qlib_workdir'])
+
+# 处理 qlib_workdir：如果是相对路径，转换为相对于项目根目录的绝对路径
+qlib_workdir_raw = Path(cfg['qlib_workdir'])
+if not qlib_workdir_raw.is_absolute():
+    qlib_workdir = (PROJECT_ROOT / qlib_workdir_raw).resolve()
+else:
+    qlib_workdir = qlib_workdir_raw
 
 
 class Tee:
