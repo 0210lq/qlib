@@ -34,12 +34,15 @@
 ## 仓库结构概览
 
 - `qlib_code/` — Qlib 相关的 Python 脚本与工具：
-  - `run_daily_update.py` — 日常流水线入口：拉取/转换数据（调用 qlib 的 dump_bin）、运行预测、导出 CSV、写入 DB
+  - `run_daily_update.py` — 日常流水线入口：智能数据转换、模型预测（支持自动路径处理和模式检测）
   - `update_new.py` — 加载训练好的模型并对指定日期生成预测文件
-  - `sql2csv.py`、`importer.py` — 数据获取与导入工具
+  - `update_latest_days.py` — 从数据库获取最新交易日数据
+  - `sql2csv.py`、`tushare2csv.py` — 数据获取与导入工具
   - `hyperparameter_lgbm.py` — Optuna 超参搜索示例（LightGBM）
   - `import_weight_to_mysql.py` — 将导出的权重/回测结果导入 MySQL 的工具
   - `update_yaml.py` — 将优化得到的超参数自动写入配置文件的工具
+  - `sync_provider_uri.py` — 同步 provider_uri 配置
+  - `check_qlib_data.py` — Qlib 数据诊断工具
 
 - `Optimizer_matlab/` — Matlab 优化与回测：
   - `run_optimizer.m`, `run_backtest.m`, `batch_run_optimizer.m` 等脚本
@@ -128,11 +131,11 @@ cp Optimizer_matlab/config/config_db.example.m Optimizer_matlab/config/config_db
 # 数据基础目录（项目外部）
 base_dir: "../qlib_data"
 
-# Qlib 仓库路径
-qlib_workdir: "../qlib"
+# Qlib 仓库路径（项目内，已包含）
+qlib_workdir: "./qlib"
 
-# 模型路径
-model_path: "${base_dir}/models/trained_model"
+# 模型路径（推荐使用项目内路径）
+model_path: "./models/trained_model.pkl"
 
 # Python 执行路径（使用当前激活的环境）
 python_exe: "python"
@@ -140,6 +143,9 @@ python_exe: "python"
 
 **说明：**
 - `base_dir`: 数据存储基础目录，推荐使用项目外的相对路径
+- `qlib_workdir`: Qlib 源码路径，项目已包含，使用 `"./qlib"`
+- `model_path`: 模型文件路径，推荐使用项目内路径 `"./models/"`
+- 相对路径会自动转换为基于项目根目录的绝对路径
 - 支持环境变量：`${HOME}` (Linux/Mac) 或 `${USERPROFILE}` (Windows)
 - 更多配置说明请查看 `config/paths.example.yaml` 中的详细注释
 
@@ -257,6 +263,57 @@ qlib_code/workflow_config_lightgbm.yaml
 
 详细说明请参考 [Provider URI 配置管理指南](docs/provider_uri_config_guide.md)。
 
+### 智能特性
+
+项目包含多项自动化特性，简化使用流程：
+
+#### 1. 自动路径处理
+
+**相对路径自动转换**：
+- 所有相对路径（如 `"./qlib"`、`"../qlib_data"`）会自动转换为基于项目根目录的绝对路径
+- 无需担心当前工作目录的影响
+- 支持跨平台路径格式
+
+**示例**：
+```yaml
+# config/paths.yaml
+qlib_workdir: "./qlib"              # → E:\jzq\qlib\qlib
+provider_uri: "../qlib_data/qlib_bin"  # → E:\jzq\qlib_data\qlib_bin
+model_path: "./models/model.pkl"    # → E:\jzq\qlib\models\model.pkl
+```
+
+#### 2. 智能模式检测
+
+**dump_all vs dump_update 自动选择**：
+- 首次运行：检测到 Qlib 数据不存在，自动使用 `dump_all`（全量导入）
+- 后续运行：检测到 Qlib 数据已存在，自动使用 `dump_update`（增量更新）
+- 性能提升：增量更新速度约为全量导入的 30-50 倍
+
+**判断依据**：检查 `{provider_uri}/calendars/day.txt` 是否存在
+
+#### 3. 自动目录创建
+
+**无需手动创建目录**：
+- `logs/` 目录在首次运行时自动创建
+- 数据目录（如 `daily/YYYYMMDD/`）自动创建
+- 中间目录（如 `qlib_bin/calendars/`）自动创建
+
+#### 4. 日期参数智能处理
+
+**指定日期时**：
+- 自动使用对应日期的数据目录
+- 格式转换：`2026-01-09` → `20260109`
+- 环境变量传递到所有子脚本
+
+**不指定日期时**：
+- 自动使用当天日期
+- 或使用最新修改的数据目录（向后兼容）
+
+**相关文档**：
+- [数据路径流程验证](docs/data_path_flow_verification.md)
+- [Dump 模式自动检测](docs/dump_mode_auto_detection.md)
+- [自动创建日志目录](docs/auto_create_logs_dir.md)
+
 ## 使用方法
 
 ### 1. 日常预测流水线
@@ -277,12 +334,21 @@ matlab -r "run('main_daily.m')"
 matlab -r "run('main_daily.m')"
 ```
 
-该流程会自动完成：
-1. 拉取或读取最新 CSV 数据
-2. 调用 Qlib 的 `dump_bin.py` 转换为二进制格式
-3. 加载训练好的模型生成预测结果 `prediction_YYYYMMDD.csv`
-4. 将预测结果写入数据库
-5. 调用 MATLAB 优化器生成组合权重（可选）
+**脚本特性**：
+- ✅ **自动路径处理**: 相对路径自动转换为绝对路径
+- ✅ **智能模式检测**: 首次运行自动全量导入，后续自动增量更新
+- ✅ **自动创建目录**: logs 目录自动创建
+- ✅ **日期参数传递**: 指定日期后自动使用对应的数据目录
+
+**执行流程**：
+1. 从数据库获取指定日期的 CSV 数据 → `../qlib_data/daily/YYYYMMDD/`
+2. 智能检测并选择数据转换模式：
+   - 首次运行：使用 `dump_all` (全量导入)
+   - 后续运行：使用 `dump_update` (增量更新)
+3. 转换 CSV 为 Qlib 二进制格式 → `../qlib_data/qlib_bin/`
+4. 加载训练好的模型 (`./models/trained_model.pkl`)
+5. 生成预测结果并写入数据库
+6. 可选：调用 MATLAB 优化器生成组合权重
 
 ### 2. 历史预测流水线
 
@@ -439,6 +505,36 @@ qlib_workdir: "./qlib"  # 指向项目内的 qlib 目录
 ```
 
 dump_bin.py 位置：`qlib/scripts/dump_bin.py`
+
+**说明**：相对路径会自动转换为基于项目根目录的绝对路径。
+
+**Q: 首次运行遇到 "calendars/day.txt not found" 错误？**
+
+这是正常的，脚本会自动检测并使用 `dump_all` 模式进行全量导入：
+
+```
+未检测到 Qlib 数据或数据不完整，使用全量导入模式 (dump_all)
+  缺失文件: ..\qlib_data\qlib_bin\calendars\day.txt
+```
+
+后续运行会自动切换到 `dump_update` 增量更新模式。
+
+**Q: 日志目录不存在？**
+
+日志目录会自动创建，无需手动创建。如果遇到权限问题，请检查项目目录的写权限。
+
+**Q: 数据路径配置错误？**
+
+检查 `config/paths.yaml` 中的路径配置：
+- `csv_daily_dir`: CSV 数据存储目录
+- `provider_uri`: Qlib 二进制数据目录
+- 相对路径基于项目根目录解析
+- 使用 `${base_dir}` 引用基础目录路径
+
+运行诊断脚本检查数据：
+```bash
+python qlib_code/check_qlib_data.py
+```
 
 **Q: 应用 Qlib 补丁失败？**
 
