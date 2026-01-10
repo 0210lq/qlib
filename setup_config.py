@@ -23,6 +23,9 @@ def setup_config():
     config_dir = project_root / "config"
     matlab_config_dir = project_root / "Optimizer_matlab" / "config"
 
+    # 确保 MATLAB 配置目录存在
+    matlab_config_dir.mkdir(parents=True, exist_ok=True)
+
     # 配置文件映射
     config_files = [
         (config_dir / "db.example.yaml", config_dir / "db.yaml"),
@@ -46,6 +49,9 @@ def setup_config():
             if response != 'y':
                 print("   跳过")
                 continue
+
+        # 确保目标目录存在
+        target_file.parent.mkdir(parents=True, exist_ok=True)
 
         # 复制文件
         shutil.copy2(example_file, target_file)

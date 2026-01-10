@@ -1,0 +1,75 @@
+# 数据库配置示例文件
+# 使用说明：
+# 1. 复制此文件为 db.yaml: cp db.example.yaml db.yaml
+# 2. 根据实际环境修改数据库连接信息
+# 3. 注意：db.yaml 包含敏感信息，不会被提交到 Git
+
+# ============================================
+# 主数据库配置
+# ============================================
+
+# 数据库类型
+type: "mysql"
+
+# 主数据库名称（用于存储因子、风险等数据）
+database: "data_prepared_new"
+
+# 投资组合数据库名称
+database2: "portfolio_new"
+
+# 数据表名称
+table_name: "data_score"          # 分数数据表
+table_name2: "portfolio"          # 投资组合表
+
+# 性能配置
+chunk_size: 20000                 # 数据批处理大小
+workers: 4                        # 并行工作进程数
+
+# ============================================
+# 数据库连接信息（主库）
+# ============================================
+
+# 用户名
+user: "your_username"
+
+# 密码
+password: "your_password"
+
+# 主机地址（支持格式：hostname 或 hostname:port）
+host: "localhost:3306"
+
+# 端口（如果 host 中未指定端口，则使用此配置）
+port: 3306
+
+# ============================================
+# 备用数据库配置（可选）
+# ============================================
+
+# 备用主机地址（用于某些特定数据源）
+host2: "localhost:3306"
+
+# 备用数据库名称
+database3: "data_prepared_new"
+
+# ============================================
+# 其他数据库配置（可选）
+# ============================================
+
+# 第二用户（用于特定数据库）
+user2: "your_username2"
+
+# 第三主机地址
+host3: "localhost:3306"
+
+# 第四数据库名称（用于 qlib 配置）
+database4: "qlib"
+table_name3: "best_params"
+
+# 第五数据库名称（投资组合信息）
+database5: "portfolio_new"
+table_name4: "portfolio_info"
+
+# 其他表名
+table_name5: "portfolio_info"
+table_name6: "portfolio_constraint"
+table_name7: "factor_constraint"
