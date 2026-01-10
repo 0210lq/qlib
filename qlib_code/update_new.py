@@ -25,16 +25,41 @@ original_sys_path = sys.path.copy()
 
 def main():
     from config_utils import load_config_with_substitution
-    cfg_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'config', 'paths.yaml'))
+    # 获取脚本所在目录和项目根目录
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.dirname(script_dir)
+    
+    cfg_path = os.path.abspath(os.path.join(script_dir, '..', 'config', 'paths.yaml'))
     cfg = load_config_with_substitution(cfg_path)
 
-    provider_uri = cfg['provider_uri']
+    # 解析 provider_uri：如果是相对路径，基于项目根目录解析为绝对路径
+    provider_uri_raw = cfg['provider_uri']
+    if not os.path.isabs(provider_uri_raw):
+        # 相对路径基于项目根目录解析
+        provider_uri = os.path.join(project_root, provider_uri_raw.lstrip('./'))
+        provider_uri = os.path.normpath(provider_uri)
+    else:
+        provider_uri = provider_uri_raw
+    
     qlib.init(provider_uri=provider_uri)
 
-    model_path = cfg['model_path']
-
+    # 解析模型路径：如果是相对路径，基于项目根目录解析
+    model_path_raw = cfg['model_path']
+    if os.path.isabs(model_path_raw):
+        model_path = model_path_raw
+    else:
+        # 相对路径基于项目根目录解析
+        model_path = os.path.join(project_root, model_path_raw.lstrip('./'))
+        model_path = os.path.normpath(model_path)
+    
+    if not os.path.exists(model_path):
+        raise FileNotFoundError(
+            f"模型文件不存在: {model_path}\n"
+            f"请检查配置文件中的 model_path 设置，或确保模型文件已正确放置。"
+        )
+    
     model = pickle.load(open(model_path, "rb"))
-    print("模型加载成功")
+    print(f"模型加载成功: {model_path}")
     
 
     instruments = D.instruments(market="all")

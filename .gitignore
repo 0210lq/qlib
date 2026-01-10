@@ -159,12 +159,16 @@ tmp/
 *.sqlite3
 
 # Data directories (根据 paths.yaml 中的路径，这些通常包含大量数据文件)
-# 注意：如果这些目录在项目内，取消注释下面的行
-# csv_data/
-# daily/
-# qlib_bin/
-# qlib_output/
-# E:/
+# 注意：数据目录通常在项目外（../qlib_data），但如果错误生成在项目内，也需要忽略
+qlib_data/
+csv_data/
+daily/
+qlib_bin/
+qlib_output/
+output/
+processing/
+# 如果数据目录在项目外（../qlib_data），通常不会被 git 跟踪，但为了安全也列出
+../qlib_data/
 
 # Model files
 *.pkl

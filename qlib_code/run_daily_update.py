@@ -29,7 +29,13 @@ def _latest_subdir(base: Path) -> Path:
     except Exception:
         return base
 
-qlib_bin_dir = cfg['provider_uri']
+# 处理 qlib_bin_dir：如果是相对路径，转换为相对于项目根目录的绝对路径
+qlib_bin_dir_raw = cfg['provider_uri']
+if not os.path.isabs(qlib_bin_dir_raw):
+    # 相对路径基于项目根目录解析
+    qlib_bin_dir = str((PROJECT_ROOT / qlib_bin_dir_raw.lstrip('./')).resolve())
+else:
+    qlib_bin_dir = qlib_bin_dir_raw
 
 # 处理 qlib_workdir：如果是相对路径，转换为相对于项目根目录的绝对路径
 qlib_workdir_raw = Path(cfg['qlib_workdir'])
@@ -198,9 +204,15 @@ def main():
 
     print("转换数据格式...")
 
+    # 确保 args.qlib_bin_dir 是绝对路径（基于项目根目录解析）
+    if not os.path.isabs(args.qlib_bin_dir):
+        # 如果是相对路径，基于项目根目录解析
+        qlib_bin_dir_abs = str((PROJECT_ROOT / args.qlib_bin_dir.lstrip('./')).resolve())
+        args.qlib_bin_dir = qlib_bin_dir_abs
+    
     # 智能判断使用 dump_all 还是 dump_update
     # 检查 qlib_bin_dir 是否已经初始化（是否存在 calendars/day.txt）
-    qlib_bin_path = Path(args.qlib_bin_dir)
+    qlib_bin_path = Path(args.qlib_bin_dir).resolve()
     calendar_file = qlib_bin_path / "calendars" / "day.txt"
 
     if calendar_file.exists():
