@@ -246,6 +246,8 @@ config.json
 # Configuration files with sensitive data
 config/db.yaml
 config/paths.yaml
+config/sql2csv.yaml
+config/tushare2csv.yaml
 Optimizer_matlab/config/config_db.m
 
 # Keep example files
