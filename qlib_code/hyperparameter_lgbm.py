@@ -49,30 +49,48 @@ def objective(trial, dataset):
     return min(evals_result["valid"]["l2"])
 
 
+def _ensure_qlib_initialized():
+    """
+    确保 qlib 只初始化一次
+    返回配置对象和自定义工具路径
+    """
+    from config_utils import load_config_with_substitution
+
+    # 检查 qlib 是否已经初始化
+    if not hasattr(qlib, '_initialized') or not qlib._initialized:
+        config_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'config', 'paths.yaml'))
+        cfg = load_config_with_substitution(config_path)
+        provider_uri = cfg['provider_uri']
+
+        # 减少并行工作进程数以降低内存使用
+        # 设置为1表示不使用并行处理，适合内存较小的环境
+        os.environ['QLIB_NUM_WORKERS'] = '1'
+        os.environ['NUMEXPR_MAX_THREADS'] = '1'
+        os.environ['OMP_NUM_THREADS'] = '1'
+        os.environ['MKL_NUM_THREADS'] = '1'
+
+        qlib.init(provider_uri=provider_uri, region="cn", kernels=1)
+
+        global_tools = cfg["global_tools"]
+        custom_path = os.getenv(global_tools)
+        if custom_path and custom_path not in sys.path:
+            sys.path.append(custom_path)
+    else:
+        # 如果已经初始化，重新加载配置
+        config_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'config', 'paths.yaml'))
+        cfg = load_config_with_substitution(config_path)
+
+    return cfg
+
+
 def run_hyperparameter_optimization_auto():
     """
     每天自动更新的超参数优化函数
     自动计算训练/验证/测试日期范围，进行超参数优化并保存结果到数据库
     """
-    from config_utils import load_config_with_substitution
     from time_utils import last_workday_auto, last_workday_calculate
 
-    config_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'config', 'paths.yaml'))
-    cfg = load_config_with_substitution(config_path)
-    provider_uri = cfg['provider_uri']
-
-    # 减少并行工作进程数以降低内存使用
-    # 设置为1表示不使用并行处理，适合内存较小的环境
-    os.environ['QLIB_NUM_WORKERS'] = '1'
-    os.environ['NUMEXPR_MAX_THREADS'] = '1'
-    os.environ['OMP_NUM_THREADS'] = '1'
-    os.environ['MKL_NUM_THREADS'] = '1'
-
-    qlib.init(provider_uri=provider_uri, region="cn", kernels=1)
-
-    global_tools = cfg["global_tools"]
-    custom_path = os.getenv(global_tools)
-    sys.path.append(custom_path)
+    cfg = _ensure_qlib_initialized()
 
     last_workday = last_workday_auto()
 
@@ -205,24 +223,57 @@ def run_hyperparameter_optimization_manual(train_start, today):
         train_start: 训练开始日期，格式如 "2023-01-01"
         today: 今天的日期，格式如 "2024-12-31"
     """
-    from config_utils import load_config_with_substitution
+    # 确保 qlib 初始化
+    _ensure_qlib_initialized()
+
+    # 调用核心优化逻辑
+    _run_optimization_core(train_start, today)
+
+
+def history_hyperparameter_optimization(start_date, end_date, train_start="2023-01-01"):
+    """
+    批量处理历史日期范围内的超参数优化
+
+    参数:
+        start_date: 开始日期，格式如 "2026-01-05"
+        end_date: 结束日期，格式如 "2026-01-06"
+        train_start: 训练开始日期，默认 "2023-01-01"
+    """
     from time_utils import last_workday_calculate
+    from datetime import datetime, timedelta
 
-    config_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'config', 'paths.yaml'))
-    cfg = load_config_with_substitution(config_path)
-    provider_uri = cfg['provider_uri']
+    # 确保 qlib 只初始化一次
+    _ensure_qlib_initialized()
 
-    # 减少并行工作进程数以降低内存使用
-    os.environ['QLIB_NUM_WORKERS'] = '1'
-    os.environ['NUMEXPR_MAX_THREADS'] = '1'
-    os.environ['OMP_NUM_THREADS'] = '1'
-    os.environ['MKL_NUM_THREADS'] = '1'
+    # 解析日期
+    start = datetime.strptime(start_date, "%Y-%m-%d")
+    end = datetime.strptime(end_date, "%Y-%m-%d")
 
-    qlib.init(provider_uri=provider_uri, region="cn", kernels=1)
+    # 遍历日期范围
+    current = start
+    while current <= end:
+        date_str = current.strftime("%Y-%m-%d")
+        print(f"\n{'='*60}")
+        print(f"处理日期: {date_str}")
+        print(f"{'='*60}\n")
 
-    global_tools = cfg["global_tools"]
-    custom_path = os.getenv(global_tools)
-    sys.path.append(custom_path)
+        try:
+            # 调用手动优化函数，但不重新初始化 qlib
+            _run_optimization_core(train_start, date_str)
+        except Exception as e:
+            print(f"处理日期 {date_str} 时出错: {e}")
+            import traceback
+            traceback.print_exc()
+
+        current += timedelta(days=1)
+
+
+def _run_optimization_core(train_start, today):
+    """
+    超参数优化的核心逻辑（不包含 qlib 初始化）
+    用于被 history_hyperparameter_optimization 调用
+    """
+    from time_utils import last_workday_calculate
 
     last_workday = last_workday_calculate(today)
 
@@ -341,3 +392,6 @@ def run_hyperparameter_optimization_manual(train_start, today):
 if __name__ == "__main__":
     # 默认执行自动更新函数
     run_hyperparameter_optimization_auto()
+
+    # 如果需要批量处理历史日期，可以调用：
+    # history_hyperparameter_optimization(start_date='2026-01-05', end_date='2026-01-06')
