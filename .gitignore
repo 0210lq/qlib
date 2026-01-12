@@ -261,3 +261,6 @@ test_*.py
 *_test.py
 !**/test_*.py
 
+# Claude Code CLI temporary files
+tmpclaude-*-cwd
+
