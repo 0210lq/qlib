@@ -410,21 +410,50 @@ class QlibDataConverter:
     
 
 def main():
-    cfg_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'config', 'paths.yaml'))
-    cfg = load_config_with_substitution(cfg_path)
-
     # 获取项目根目录
     script_dir = Path(__file__).resolve().parent
     project_root = script_dir.parent
 
-    output_dir = cfg['csv_output_dir']
+    # 先读取 paths.yaml 获取基础变量（如 base_dir），用于变量替换
+    cfg_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'config', 'paths.yaml'))
+    paths_cfg = load_config_with_substitution(cfg_path)
+
+    # 从配置文件读取参数
+    sql2csv_cfg_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'config', 'sql2csv.yaml'))
+    sql2csv_cfg_raw = yaml.safe_load(open(sql2csv_cfg_path, 'r', encoding='utf-8')) or {}
+    
+    # 合并 paths.yaml 的变量到 sql2csv 配置的上下文中，以便替换 ${base_dir} 等变量
+    from config_utils import _substitute_string
+    merged_context = {**paths_cfg, **sql2csv_cfg_raw}
+    sql2csv_cfg = {}
+    for key, value in sql2csv_cfg_raw.items():
+        if isinstance(value, str) and '${' in value:
+            sql2csv_cfg[key] = _substitute_string(value, merged_context)
+        else:
+            sql2csv_cfg[key] = value
+    
+    # 从配置文件读取输出路径
+    output_dir = sql2csv_cfg.get('csv_output_dir')
+    if not output_dir:
+        # 如果配置文件中没有，则从 paths.yaml 读取（向后兼容）
+        output_dir = paths_cfg.get('csv_output_dir')
+    if not output_dir:
+        raise ValueError("未找到 csv_output_dir 配置，请在 config/sql2csv.yaml 或 config/paths.yaml 中设置")
 
     converter = QlibDataConverter(output_dir)
-
-    market = 'ALL'
-    start_date = '20150101'
-    end_date = date.today().strftime('%Y%m%d')
-    batch_size = 1000
+    
+    # 读取配置参数
+    market = sql2csv_cfg.get('market', 'ALL')
+    start_date = sql2csv_cfg.get('start_date', '20150101')
+    end_date = sql2csv_cfg.get('end_date')
+    batch_size = sql2csv_cfg.get('batch_size', 1000)
+    
+    # 如果 end_date 为 None 或空值，使用当前日期
+    if end_date is None or end_date == '':
+        end_date = date.today().strftime('%Y%m%d')
+    else:
+        # 确保 end_date 是字符串格式
+        end_date = str(end_date)
 
     converter.process_all_stocks(market=market, start_date=start_date, end_date=end_date, batch_size=batch_size)
 
@@ -434,13 +463,13 @@ def main():
     logging.info("开始转换数据格式")
 
     # 处理 qlib_workdir：如果是相对路径，转换为相对于项目根目录的绝对路径
-    qlib_workdir_raw = Path(cfg["qlib_workdir"])
+    qlib_workdir_raw = Path(paths_cfg["qlib_workdir"])
     if not qlib_workdir_raw.is_absolute():
         DEFAULT_QLIB_PATH = str((project_root / qlib_workdir_raw).resolve())
     else:
         DEFAULT_QLIB_PATH = str(qlib_workdir_raw)
 
-    DEFAULT_QLIB_DIR = cfg["provider_uri"]
+    DEFAULT_QLIB_DIR = paths_cfg["provider_uri"]
     DEFAULT_FIELDS = "open,close,high,low,volume,factor,money"
     
     parser = argparse.ArgumentParser(description='Qlib 数据导出工具')

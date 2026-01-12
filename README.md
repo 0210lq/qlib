@@ -109,14 +109,18 @@ cp record_temp.py "$CONDA_PREFIX/lib/python3.12/site-packages/qlib/workflow/reco
 
 ```bash
 # 复制配置文件模板
-# Windows (PowerShell)
-Copy-Item config\db.example.yaml config\db.yaml
-Copy-Item config\paths.example.yaml config\paths.yaml
-Copy-Item Optimizer_matlab\config\config_db.example.m Optimizer_matlab\config\config_db.m
+# Windows (CMD)
+copy config\db.example.yaml config\db.yaml
+copy config\paths.example.yaml config\paths.yaml
+copy config\sql2csv.example.yaml config\sql2csv.yaml
+copy config\tushare2csv.example.yaml config\tushare2csv.yaml
+copy Optimizer_matlab\config\config_db.example.m Optimizer_matlab\config\config_db.m
 
 # Linux/Mac
 cp config/db.example.yaml config/db.yaml
 cp config/paths.example.yaml config/paths.yaml
+cp config/sql2csv.example.yaml config/sql2csv.yaml
+cp config/tushare2csv.example.yaml config/tushare2csv.yaml
 cp Optimizer_matlab/config/config_db.example.m Optimizer_matlab/config/config_db.m
 ```
 
