@@ -98,8 +98,8 @@ pip install -r requirements.txt
 **3. 应用 Qlib 补丁**
 
 ```bash
-# Windows (PowerShell)
-Copy-Item -Path "record_temp.py" -Destination "$env:CONDA_PREFIX\Lib\site-packages\qlib\workflow\record_temp.py" -Force
+# Windows (CMD)
+copy /Y "record_temp.py" "%CONDA_PREFIX%\Lib\site-packages\qlib\workflow\record_temp.py"
 
 # Linux/Mac
 cp record_temp.py "$CONDA_PREFIX/lib/python3.12/site-packages/qlib/workflow/record_temp.py"
@@ -160,7 +160,29 @@ python qlib_code/sql2csv.py        # 从数据库导出
 python qlib_code/tushare2csv.py    # 从 Tushare 获取
 ```
 
-**7. 运行预测**
+**7. 模型训练与超参数调优**
+
+**步骤一：超参数搜索（使用 Optuna）**
+
+```bash
+python qlib_code/hyperparameter_lgbm.py
+```
+
+可以在脚本中调整 `n_trials` 参数控制训练次数。
+
+**步骤二：更新配置文件**
+
+```bash
+python qlib_code/update_yaml.py
+```
+
+**步骤三：训练模型**
+
+```bash
+qrun qlib_code/workflow_config_lightgbm.yaml
+```
+
+**8. 运行预测**
 
 ```bash
 # 使用 Python 运行日常预测
@@ -375,29 +397,7 @@ batch_run_optimizer.m
 run_backtest.m
 ```
 
-### 4. 模型训练与超参数调优
-
-**步骤一：超参数搜索（使用 Optuna）**
-
-```bash
-python qlib_code/hyperparameter_lgbm.py
-```
-
-可以在脚本中调整 `n_trials` 参数控制训练次数。
-
-**步骤二：更新配置文件**
-
-```bash
-python qlib_code/update_yaml.py
-```
-
-**步骤三：训练模型**
-
-```bash
-qrun qlib_code/workflow_config_lightgbm.yaml
-```
-
-### 5. 权重导入数据库
+### 4. 权重导入数据库
 
 ```bash
 python qlib_code/import_weight_to_mysql.py
