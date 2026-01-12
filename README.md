@@ -85,6 +85,7 @@ cd qlib_sql-master
 **2. 创建 Conda 虚拟环境并安装依赖**
 
 ```bash
+打开 Anaconda Prompt 
 # 创建虚拟环境
 conda create -n qlib_env python=3.12 -y
 
@@ -160,8 +161,6 @@ python_exe: "python"
 ```bash
 # 导出数据（选择其一）
 python qlib_code/sql2csv.py        # 从数据库导出
-# 或
-python qlib_code/tushare2csv.py    # 从 Tushare 获取
 ```
 
 **7. 模型训练与超参数调优**
