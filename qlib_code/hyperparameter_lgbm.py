@@ -75,6 +75,7 @@ def _ensure_qlib_initialized():
         custom_path = os.getenv(global_tools)
         if custom_path and custom_path not in sys.path:
             sys.path.append(custom_path)
+            from time_utils import last_workday_auto, last_workday_calculate
     else:
         # 如果已经初始化，重新加载配置
         config_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'config', 'paths.yaml'))
@@ -88,7 +89,7 @@ def run_hyperparameter_optimization_auto():
     每天自动更新的超参数优化函数
     自动计算训练/验证/测试日期范围，进行超参数优化并保存结果到数据库
     """
-    from time_utils import last_workday_auto, last_workday_calculate
+    # from time_utils import last_workday_auto, last_workday_calculate
 
     cfg = _ensure_qlib_initialized()
 
@@ -239,7 +240,6 @@ def history_hyperparameter_optimization(start_date, end_date, train_start="2023-
         end_date: 结束日期，格式如 "2026-01-06"
         train_start: 训练开始日期，默认 "2023-01-01"
     """
-    from time_utils import last_workday_calculate
     from datetime import datetime, timedelta
 
     # 确保 qlib 只初始化一次
@@ -391,7 +391,7 @@ def _run_optimization_core(train_start, today):
 
 if __name__ == "__main__":
     # 默认执行自动更新函数
-    run_hyperparameter_optimization_auto()
+    # run_hyperparameter_optimization_auto()
 
     # 如果需要批量处理历史日期，可以调用：
-    # history_hyperparameter_optimization(start_date='2026-01-05', end_date='2026-01-06')
+    history_hyperparameter_optimization(start_date='2026-01-05', end_date='2026-01-06')
