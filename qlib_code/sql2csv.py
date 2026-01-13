@@ -16,18 +16,32 @@ log = logging.getLogger(__name__)
 
 class QlibDataConverter:
    
-    def __init__(self, output_dir):
-       
+    def __init__(self, output_dir, db_config=None):
+
         self.csv_output_dir = output_dir
-        db_config_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'config', 'db.yaml'))
-        with open(db_config_path, 'r', encoding='utf-8') as f:
-            db_cfg = yaml.safe_load(f) or {}
-        
+
+        # 如果没有传入数据库配置，则从 db.yaml 读取（向后兼容）
+        if db_config is None:
+            db_config_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'config', 'db.yaml'))
+            with open(db_config_path, 'r', encoding='utf-8') as f:
+                db_cfg = yaml.safe_load(f) or {}
+            db_host = db_cfg.get('host2', 'localhost:3306')
+            db_port = db_cfg.get('port', 3306)
+            db_database = db_cfg.get('database3', 'data_prepared_new')
+            db_user = db_cfg.get('user', 'root')
+            db_password = db_cfg.get('password', '')
+        else:
+            db_host = db_config.get('db_host', 'localhost:3306')
+            db_port = db_config.get('db_port', 3306)
+            db_database = db_config.get('db_database', 'data_prepared_new')
+            db_user = db_config.get('db_user', 'root')
+            db_password = db_config.get('db_password', '')
+
         # 创建数据库连接
         try:
-            db_url = f"mysql+pymysql://{db_cfg['user']}:{db_cfg['password']}@{db_cfg['host2']}:{db_cfg['port']}/{db_cfg['database3']}"
+            db_url = f"mysql+pymysql://{db_user}:{db_password}@{db_host}/{db_database}"
             self.engine = create_engine(db_url)
-            log.info("数据库连接成功")
+            log.info(f"数据库连接成功: {db_host}/{db_database}")
         except Exception as e:
             log.error(f"数据库连接失败: {e}")
             self.engine = None
@@ -440,7 +454,16 @@ def main():
     if not output_dir:
         raise ValueError("未找到 csv_output_dir 配置，请在 config/sql2csv.yaml 或 config/paths.yaml 中设置")
 
-    converter = QlibDataConverter(output_dir)
+    # 提取数据库配置
+    db_config = {
+        'db_host': sql2csv_cfg.get('db_host', 'localhost:3306'),
+        'db_port': sql2csv_cfg.get('db_port', 3306),
+        'db_database': sql2csv_cfg.get('db_database', 'data_prepared_new'),
+        'db_user': sql2csv_cfg.get('db_user', 'root'),
+        'db_password': sql2csv_cfg.get('db_password', ''),
+    }
+
+    converter = QlibDataConverter(output_dir, db_config=db_config)
     
     # 读取配置参数
     market = sql2csv_cfg.get('market', 'ALL')
@@ -462,14 +485,23 @@ def main():
     logging.info("数据获取完成")
     logging.info("开始转换数据格式")
 
+    # 从 sql2csv.yaml 读取 qlib 路径配置，如果没有则从 paths.yaml 读取（向后兼容）
+    qlib_workdir = sql2csv_cfg.get('qlib_workdir')
+    if not qlib_workdir:
+        qlib_workdir = paths_cfg.get('qlib_workdir', './qlib')
+
+    provider_uri = sql2csv_cfg.get('provider_uri')
+    if not provider_uri:
+        provider_uri = paths_cfg.get('provider_uri', '../qlib_data/qlib_bin')
+
     # 处理 qlib_workdir：如果是相对路径，转换为相对于项目根目录的绝对路径
-    qlib_workdir_raw = Path(paths_cfg["qlib_workdir"])
+    qlib_workdir_raw = Path(qlib_workdir)
     if not qlib_workdir_raw.is_absolute():
         DEFAULT_QLIB_PATH = str((project_root / qlib_workdir_raw).resolve())
     else:
         DEFAULT_QLIB_PATH = str(qlib_workdir_raw)
 
-    DEFAULT_QLIB_DIR = paths_cfg["provider_uri"]
+    DEFAULT_QLIB_DIR = provider_uri
     DEFAULT_FIELDS = "open,close,high,low,volume,factor,money"
     
     parser = argparse.ArgumentParser(description='Qlib 数据导出工具')

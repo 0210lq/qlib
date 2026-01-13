@@ -394,4 +394,4 @@ if __name__ == "__main__":
     # run_hyperparameter_optimization_auto()
 
     # 如果需要批量处理历史日期，可以调用：
-    history_hyperparameter_optimization(start_date='2026-01-05', end_date='2026-01-06')
+    history_hyperparameter_optimization(start_date='2026-01-05', end_date='2026-01-06',train_start="2025-01-01")
