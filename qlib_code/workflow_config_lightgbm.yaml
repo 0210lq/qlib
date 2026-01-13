@@ -1,15 +1,15 @@
 qlib_init:
-    provider_uri: "../qlib_data/qlib_bin"
+    provider_uri: "D:/qlib_data/tushare_qlib_data/qlib_bin"
     region: cn
 market: &market all
 benchmark: &benchmark 000300.sh
 data_handler_config: &data_handler_config
-    start_time: 2023-01-01
-    end_time: 2026-01-08
-    fit_start_time: 2023-01-01
-    fit_end_time: 2025-12-31
+    start_time: 2017-06-30
+    end_time: 2025-07-01
+    fit_start_time: 2017-06-30
+    fit_end_time: 2025-06-25
     instruments: *market
-    
+
 port_analysis_config: &port_analysis_config
     strategy:
         class: TopkDropoutStrategy
@@ -20,8 +20,8 @@ port_analysis_config: &port_analysis_config
             n_drop: 5
             risk_degree: 1.0
     backtest:
-        start_time: 2026-01-07
-        end_time: 2026-01-08
+        start_time: 2025-06-28
+        end_time: 2025-06-29
         account: 100000000
         benchmark: *benchmark
         exchange_kwargs:
@@ -38,17 +38,17 @@ task:
         module_path: qlib.contrib.model.gbdt
         kwargs:
             loss: mse
-            colsample_bytree: 0.7719977776954766
-            learning_rate: 0.07898892598431795
-            subsample: 0.6895633934838533
-            lambda_l1: 8.780103579048659e-06
-            lambda_l2: 1.1381108970595143e-08
-            num_leaves: 27
-            feature_fraction: 0.5566228049605826
-            bagging_fraction: 0.40015270709406303
-            bagging_freq: 3
-            min_data_in_leaf: 29
-            min_child_samples: 54
+            colsample_bytree: 0.7578788098176714
+            learning_rate: 0.6195887524161012
+            subsample: 0.5685220203317624
+            lambda_l1: 1654.9003005628074
+            lambda_l2: 0.013447931810022256
+            num_leaves: 46
+            feature_fraction: 0.8850875364946033
+            bagging_fraction: 0.7500426173728267
+            bagging_freq: 5
+            min_data_in_leaf: 32
+            min_child_samples: 14
             max_depth: 10
     dataset:
         class: DatasetH
@@ -59,9 +59,9 @@ task:
                 module_path: qlib.contrib.data.handler
                 kwargs: *data_handler_config
             segments:
-                train: [2023-01-01, 2025-12-31]
-                valid: [2026-01-05, 2026-01-06]
-                test: [2026-01-07, 2026-01-08]
+                train: [2017-06-30, 2025-06-25]
+                valid: [2025-06-26, 2025-06-27]
+                test: [2025-06-30, 2025-07-01]
     record: 
         - class: SignalRecord
           module_path: qlib.workflow.record_temp
