@@ -248,11 +248,14 @@ config/db.yaml
 config/paths.yaml
 config/sql2csv.yaml
 config/tushare2csv.yaml
+config/hyperparameter_time_config.yaml
 Optimizer_matlab/config/config_db.m
 
 # Keep example files
 !config/db.example.yaml
 !config/paths.example.yaml
+!config/sql2csv.example.yaml
+!config/hyperparameter_time_config.example.yaml
 !Optimizer_matlab/config/config_db.example.m
 
 # Temporary Python scripts

@@ -93,6 +93,14 @@ def run_hyperparameter_optimization_auto():
 
     cfg = _ensure_qlib_initialized()
 
+    # 从配置文件读取时间配置
+    time_config_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'config', 'hyperparameter_time_config.yaml'))
+    with open(time_config_path, 'r', encoding='utf-8') as f:
+        time_cfg = yaml.safe_load(f)
+
+    # 读取 train_start
+    train_start = time_cfg['auto_optimization']['train_start']
+
     last_workday = last_workday_auto()
 
     test_end = str(last_workday)
@@ -102,8 +110,7 @@ def run_hyperparameter_optimization_auto():
     valid_end = test_start
     valid_start = str(last_workday_calculate(valid_end))
     # 注意: 训练数据范围较大会消耗大量内存
-    # 如果遇到内存错误，可以缩短 train_start 日期（例如改为 "2024-01-01"）
-    train_start = "2023-01-01"
+    # 如果遇到内存错误，可以在配置文件中修改 train_start 日期
     train_end = str(last_workday_calculate(valid_start))
 
     custom_dataset_config = {
@@ -231,19 +238,75 @@ def run_hyperparameter_optimization_manual(train_start, today):
     _run_optimization_core(train_start, today)
 
 
-def history_hyperparameter_optimization(start_date, end_date, train_start="2023-01-01"):
+def run_hyperparameter_optimization_manual_dates(train_start=None, train_end=None,
+                                                   valid_start=None, valid_end=None,
+                                                   test_start=None, test_end=None):
     """
-    批量处理历史日期范围内的超参数优化
+    完全手动指定所有日期的超参数优化函数
+    如果不提供参数，将从配置文件中读取
 
     参数:
-        start_date: 开始日期，格式如 "2026-01-05"
-        end_date: 结束日期，格式如 "2026-01-06"
-        train_start: 训练开始日期，默认 "2023-01-01"
+        train_start: 训练开始日期，格式如 "2023-01-01"，默认从配置文件读取
+        train_end: 训练结束日期，格式如 "2025-12-31"，默认从配置文件读取
+        valid_start: 验证开始日期，格式如 "2026-01-01"，默认从配置文件读取
+        valid_end: 验证结束日期，格式如 "2026-01-15"，默认从配置文件读取
+        test_start: 测试开始日期，格式如 "2026-01-16"，默认从配置文件读取
+        test_end: 测试结束日期，格式如 "2026-01-31"，默认从配置文件读取
+    """
+    # 确保 qlib 初始化
+    _ensure_qlib_initialized()
+
+    # 从配置文件读取日期配置（如果参数未提供）
+    if any(param is None for param in [train_start, train_end, valid_start, valid_end, test_start, test_end]):
+        time_config_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'config', 'hyperparameter_time_config.yaml'))
+        with open(time_config_path, 'r', encoding='utf-8') as f:
+            time_cfg = yaml.safe_load(f)
+
+        manual_cfg = time_cfg['manual_dates_optimization']
+        if train_start is None:
+            train_start = manual_cfg['train_start']
+        if train_end is None:
+            train_end = manual_cfg['train_end']
+        if valid_start is None:
+            valid_start = manual_cfg['valid_start']
+        if valid_end is None:
+            valid_end = manual_cfg['valid_end']
+        if test_start is None:
+            test_start = manual_cfg['test_start']
+        if test_end is None:
+            test_end = manual_cfg['test_end']
+
+    # 调用核心优化逻辑
+    _run_optimization_with_dates(train_start, train_end, valid_start, valid_end, test_start, test_end)
+
+
+def history_hyperparameter_optimization(start_date=None, end_date=None, train_start=None):
+    """
+    批量处理历史日期范围内的超参数优化
+    如果不提供参数，将从配置文件中读取
+
+    参数:
+        start_date: 开始日期，格式如 "2026-01-05"，默认从配置文件读取
+        end_date: 结束日期，格式如 "2026-01-06"，默认从配置文件读取
+        train_start: 训练开始日期，默认从配置文件读取
     """
     from datetime import datetime, timedelta
 
     # 确保 qlib 只初始化一次
     _ensure_qlib_initialized()
+
+    # 从配置文件读取时间配置（如果参数未提供）
+    if start_date is None or end_date is None or train_start is None:
+        time_config_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'config', 'hyperparameter_time_config.yaml'))
+        with open(time_config_path, 'r', encoding='utf-8') as f:
+            time_cfg = yaml.safe_load(f)
+
+        if start_date is None:
+            start_date = time_cfg['history_optimization']['start_date']
+        if end_date is None:
+            end_date = time_cfg['history_optimization']['end_date']
+        if train_start is None:
+            train_start = time_cfg['history_optimization']['train_start']
 
     # 解析日期
     start = datetime.strptime(start_date, "%Y-%m-%d")
@@ -285,6 +348,21 @@ def _run_optimization_core(train_start, today):
     valid_start = str(last_workday_calculate(valid_end))
     train_end = str(last_workday_calculate(valid_start))
 
+    _run_optimization_with_dates(train_start, train_end, valid_start, valid_end, test_start, test_end)
+
+
+def _run_optimization_with_dates(train_start, train_end, valid_start, valid_end, test_start, test_end):
+    """
+    使用指定日期进行超参数优化的核心逻辑（不包含 qlib 初始化）
+
+    参数:
+        train_start: 训练开始日期
+        train_end: 训练结束日期
+        valid_start: 验证开始日期
+        valid_end: 验证结束日期
+        test_start: 测试开始日期
+        test_end: 测试结束日期
+    """
     custom_dataset_config = {
         "class": "DatasetH",
         "module_path": "qlib.data.dataset",
@@ -390,8 +468,22 @@ def _run_optimization_core(train_start, today):
 
 
 if __name__ == "__main__":
-    # 默认执行自动更新函数
+    # 模式1: 自动优化模式（每天自动更新，从配置文件读取 train_start）
     # run_hyperparameter_optimization_auto()
 
-    # 如果需要批量处理历史日期，可以调用：
-    history_hyperparameter_optimization(start_date='2026-01-05', end_date='2026-01-06',train_start="2025-01-01")
+    # 模式2: 历史批量优化模式（从配置文件读取参数）
+    # history_hyperparameter_optimization()
+    # 或者手动指定参数：
+    # history_hyperparameter_optimization(start_date='2026-01-05', end_date='2026-01-06', train_start="2025-01-01")
+
+    # 模式3: 手动日期模式（从配置文件读取所有日期）
+    run_hyperparameter_optimization_manual_dates()
+    # 或者手动指定所有日期：
+    # run_hyperparameter_optimization_manual_dates(
+    #     train_start="2023-01-01",
+    #     train_end="2025-12-31",
+    #     valid_start="2026-01-01",
+    #     valid_end="2026-01-15",
+    #     test_start="2026-01-16",
+    #     test_end="2026-01-31"
+    # )
