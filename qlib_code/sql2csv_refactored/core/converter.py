@@ -1,0 +1,184 @@
+"""
+数据格式转换模块
+
+提供数据库记录到Qlib格式的转换功能
+"""
+
+from typing import List, Dict, Any
+from datetime import datetime
+import pandas as pd
+
+from ..models.data_models import StockData, IndexData
+from ..exceptions import DataConversionError, DataValidationError
+from ..utils.logging_config import get_logger
+
+
+class DataConverter:
+    """
+    数据格式转换器
+
+    负责将数据库记录转换为Qlib格式，处理列名映射和数据验证
+
+    Attributes:
+        output_config: 输出配置
+        logger: 日志记录器
+
+    Example:
+        converter = DataConverter(config.output)
+        df = converter.convert_to_dataframe(rows, 'stock')
+    """
+
+    def __init__(self, output_config):
+        """
+        初始化数据转换器
+
+        Args:
+            output_config: 输出配置对象
+        """
+        self.output_config = output_config
+        self.logger = get_logger()
+
+        # 获取输出列顺序和日期格式
+        self.output_columns = output_config.get('columns', [])
+        self.date_format = output_config.get('date_format', '%Y-%m-%d')
+
+    def _format_date(self, date_value: Any) -> str:
+        """
+        格式化日期为指定格式
+
+        Args:
+            date_value: 日期值（可能是字符串、datetime对象等）
+
+        Returns:
+            格式化后的日期字符串
+
+        Raises:
+            DataConversionError: 日期格式转换失败
+        """
+        try:
+            # 如果已经是字符串，尝试解析
+            if isinstance(date_value, str):
+                # 尝试 YYYYMMDD 格式
+                if len(date_value) == 8 and date_value.isdigit():
+                    dt = datetime.strptime(date_value, '%Y%m%d')
+                    return dt.strftime(self.date_format)
+                # 尝试其他常见格式
+                else:
+                    dt = datetime.strptime(date_value, '%Y-%m-%d')
+                    return dt.strftime(self.date_format)
+
+            # 如果是datetime对象
+            elif isinstance(date_value, datetime):
+                return date_value.strftime(self.date_format)
+
+            else:
+                raise ValueError(f"Unsupported date type: {type(date_value)}")
+
+        except Exception as e:
+            raise DataConversionError(f"Failed to format date: {date_value}, error: {e}") from e
+
+    def _validate_row(self, row: Dict[str, Any], data_type: str) -> None:
+        """
+        验证数据行的完整性
+
+        Args:
+            row: 数据行字典
+            data_type: 数据类型 ('stock' 或 'index')
+
+        Raises:
+            DataValidationError: 数据验证失败
+        """
+        # 核心字段：必须存在且不能为None
+        core_fields = ['date', 'code', 'close']
+
+        # 可选字段：可以为None（停牌、新股等情况）
+        optional_fields = ['open', 'high', 'low', 'volume', 'amount']
+
+        # 检查核心字段
+        missing_core = [field for field in core_fields if field not in row or row[field] is None]
+        if missing_core:
+            raise DataValidationError(
+                f"Missing required fields in {data_type} data: {missing_core}",
+                data=row
+            )
+
+        # 检查可选字段是否存在（可以为None）
+        missing_optional = [field for field in optional_fields if field not in row]
+        if missing_optional:
+            raise DataValidationError(
+                f"Missing fields in {data_type} data: {missing_optional}",
+                data=row
+            )
+
+        # 检查数值字段是否为数字（允许None）
+        numeric_fields = ['open', 'high', 'low', 'close', 'volume', 'amount']
+        for field in numeric_fields:
+            if row[field] is not None and not isinstance(row[field], (int, float)):
+                raise DataValidationError(
+                    f"Field '{field}' must be numeric or None, got: {type(row[field])}",
+                    data=row
+                )
+
+    def convert_to_dataframe(self, rows: List[Dict[str, Any]], data_type: str = 'stock') -> pd.DataFrame:
+        """
+        将数据库记录转换为Qlib格式的DataFrame
+
+        Args:
+            rows: 数据库查询结果（字典列表）
+            data_type: 数据类型 ('stock' 或 'index')
+
+        Returns:
+            Qlib格式的DataFrame
+
+        Raises:
+            DataConversionError: 数据转换失败
+            DataValidationError: 数据验证失败
+
+        Example:
+            df = converter.convert_to_dataframe(rows, 'stock')
+        """
+        if not rows:
+            self.logger.warning(f"No data to convert for {data_type}")
+            return pd.DataFrame()
+
+        try:
+            # 转换每一行数据
+            converted_rows = []
+            for row in rows:
+                # 验证数据
+                self._validate_row(row, data_type)
+
+                # 格式化日期
+                formatted_date = self._format_date(row['date'])
+
+                # 构建Qlib格式的行
+                qlib_row = {
+                    'date': formatted_date,
+                    'open': float(row['open']),
+                    'close': float(row['close']),
+                    'high': float(row['high']),
+                    'low': float(row['low']),
+                    'volume': float(row['volume']),
+                    'factor': float(row.get('factor', 1.0)),
+                    'money': float(row['amount'])  # Qlib使用'money'而不是'amount'
+                }
+
+                converted_rows.append(qlib_row)
+
+            # 创建DataFrame
+            df = pd.DataFrame(converted_rows)
+
+            # 按照配置的列顺序重新排列
+            if self.output_columns:
+                # 只保留配置中指定的列
+                available_columns = [col for col in self.output_columns if col in df.columns]
+                df = df[available_columns]
+
+            self.logger.debug(f"Converted {len(rows)} {data_type} rows to DataFrame")
+            return df
+
+        except (DataValidationError, DataConversionError):
+            raise
+        except Exception as e:
+            raise DataConversionError(f"Failed to convert {data_type} data to DataFrame: {e}") from e
+

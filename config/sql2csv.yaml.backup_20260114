@@ -1,0 +1,19 @@
+csv_output_dir: "${base_dir}/csv_data"
+
+# qlib_workdir: "./qlib"
+
+provider_uri: "${base_dir}/qlib_bin"
+
+market: "ALL"
+
+start_date: "20250101"
+
+end_date: null
+
+batch_size: 1000
+
+db_host: "rm-bp1o6we7s3o1h76x1to.mysql.rds.aliyuncs.com"
+db_port: 3306
+db_database: "data_prepared_new"
+db_user: "kai"
+db_password: "Abcd1234#"

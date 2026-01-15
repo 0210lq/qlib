@@ -13,7 +13,15 @@ import sys
 import datetime
 from sqlalchemy import create_engine, text
 import json
-
+from config_utils import load_config_with_substitution
+config_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'config', 'paths.yaml'))
+cfg = load_config_with_substitution(config_path)
+provider_uri = cfg['provider_uri']
+global_tools = cfg["global_tools"]
+custom_path = os.getenv(global_tools)
+if custom_path and custom_path not in sys.path:
+    sys.path.append(custom_path)
+    from time_utils import last_workday_auto, last_workday_calculate
 
 warnings.simplefilter("ignore", category=FutureWarning)
 warnings.filterwarnings("ignore")
@@ -89,7 +97,7 @@ def run_hyperparameter_optimization_auto():
     每天自动更新的超参数优化函数
     自动计算训练/验证/测试日期范围，进行超参数优化并保存结果到数据库
     """
-    # from time_utils import last_workday_auto, last_workday_calculate
+    from time_utils import last_workday_auto, last_workday_calculate
 
     cfg = _ensure_qlib_initialized()
 
@@ -135,7 +143,7 @@ def run_hyperparameter_optimization_auto():
     }
     dataset = init_instance_by_config(custom_dataset_config)
 
-    study = optuna.create_study(study_name="LGBM_158", storage="sqlite:///db1.sqlite3", load_if_exists=True, direction="minimize")
+    study = optuna.create_study(study_name="LGBM_158_auto", storage="sqlite:///db1.sqlite3", load_if_exists=True, direction="minimize")
 
     # R.start(experiment_name="lgbm_optuna", recorder_name="run_1")
     # 可以通过调整n_trials的数量，去控制模型训练次数
@@ -385,7 +393,7 @@ def _run_optimization_with_dates(train_start, train_end, valid_start, valid_end,
     }
     dataset = init_instance_by_config(custom_dataset_config)
 
-    study = optuna.create_study(study_name="LGBM_158", storage="sqlite:///db1.sqlite3", load_if_exists=True, direction="minimize")
+    study = optuna.create_study(study_name="LGBM_158_manual", storage="sqlite:///db1.sqlite3", load_if_exists=True, direction="minimize")
 
     # 可以通过调整n_trials的数量，去控制模型训练次数
     study.optimize(lambda trial: objective(trial, dataset), n_trials=2, n_jobs=1)
@@ -469,7 +477,7 @@ def _run_optimization_with_dates(train_start, train_end, valid_start, valid_end,
 
 if __name__ == "__main__":
     # 模式1: 自动优化模式（每天自动更新，从配置文件读取 train_start）
-    # run_hyperparameter_optimization_auto()
+    run_hyperparameter_optimization_auto()
 
     # 模式2: 历史批量优化模式（从配置文件读取参数）
     # history_hyperparameter_optimization()
@@ -477,7 +485,7 @@ if __name__ == "__main__":
     # history_hyperparameter_optimization(start_date='2026-01-05', end_date='2026-01-06', train_start="2025-01-01")
 
     # 模式3: 手动日期模式（从配置文件读取所有日期）
-    run_hyperparameter_optimization_manual_dates()
+    # run_hyperparameter_optimization_manual_dates()
     # 或者手动指定所有日期：
     # run_hyperparameter_optimization_manual_dates(
     #     train_start="2023-01-01",
