@@ -1,0 +1,119 @@
+# 超参数优化 - 很少修改的配置
+# 这些配置通常在项目初始化后很少改动
+
+# 环境变量配置（用于控制内存和性能）
+environment:
+  # Qlib 工作进程数（设为1可降低内存使用）
+  QLIB_NUM_WORKERS: '1'
+
+  # 数值表达式最大线程数
+  NUMEXPR_MAX_THREADS: '1'
+
+  # OpenMP 线程数
+  OMP_NUM_THREADS: '1'
+
+  # MKL 线程数
+  MKL_NUM_THREADS: '1'
+
+# 模型配置
+model:
+  # 模型类名
+  class: "LGBModel"
+
+  # 模型模块路径
+  module_path: "qlib.contrib.model.gbdt"
+
+  # 固定的模型参数（不参与优化）
+  kwargs:
+    # 损失函数
+    loss: "mse"
+
+    # 树的最大深度
+    max_depth: 10
+
+# 模型参数搜索空间（Optuna 优化的参数范围）
+parameter_search_space:
+  # 列采样比例
+  colsample_bytree:
+    type: "uniform"
+    low: 0.5
+    high: 1.0
+
+  # 学习率
+  learning_rate:
+    type: "uniform"
+    low: 0.0
+    high: 1.0
+
+  # 子样本比例
+  subsample:
+    type: "uniform"
+    low: 0.0
+    high: 1.0
+
+  # L1 正则化参数
+  lambda_l1:
+    type: "loguniform"
+    low: 1.0e-8
+    high: 10000.0
+
+  # L2 正则化参数
+  lambda_l2:
+    type: "loguniform"
+    low: 1.0e-8
+    high: 10000.0
+
+  # 叶子节点数量
+  num_leaves:
+    type: "int"
+    low: 1
+    high: 1024
+
+  # 特征采样比例
+  feature_fraction:
+    type: "uniform"
+    low: 0.4
+    high: 1.0
+
+  # Bagging 采样比例
+  bagging_fraction:
+    type: "uniform"
+    low: 0.4
+    high: 1.0
+
+  # Bagging 频率
+  bagging_freq:
+    type: "int"
+    low: 1
+    high: 7
+
+  # 叶子节点最小数据量
+  min_data_in_leaf:
+    type: "int"
+    low: 1
+    high: 50
+
+  # 子节点最小样本数
+  min_child_samples:
+    type: "int"
+    low: 5
+    high: 100
+
+# 数据集配置
+dataset:
+  # 数据集类名
+  class: "DatasetH"
+
+  # 数据集模块路径
+  module_path: "qlib.data.dataset"
+
+  # 数据处理器配置
+  handler:
+    # 特征处理器类名
+    class: "Alpha158"
+
+    # 特征处理器模块路径
+    module_path: "qlib.contrib.data.handler"
+
+    # 股票范围
+    instruments: "all"

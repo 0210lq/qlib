@@ -23,37 +23,52 @@ if custom_path and custom_path not in sys.path:
     sys.path.append(custom_path)
     from time_utils import last_workday_auto, last_workday_calculate
 
+# 加载超参数优化配置
+frequent_config_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'config', 'hyperparameter_frequent_config.yaml'))
+with open(frequent_config_path, 'r', encoding='utf-8') as f:
+    FREQUENT_CFG = yaml.safe_load(f)
+
+static_config_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'config', 'hyperparameter_static_config.yaml'))
+with open(static_config_path, 'r', encoding='utf-8') as f:
+    STATIC_CFG = yaml.safe_load(f)
+
 warnings.simplefilter("ignore", category=FutureWarning)
 warnings.filterwarnings("ignore")
 import logging
 log = logging.getLogger(__name__)
 
 def objective(trial, dataset):
+    """
+    Optuna 优化的目标函数
+    从配置文件读取模型参数和搜索空间
+    """
+    # 从配置文件读取模型基础配置
+    model_cfg = STATIC_CFG['model']
+    param_space = STATIC_CFG['parameter_search_space']
+
+    # 构建模型参数，根据配置文件动态生成
+    kwargs = dict(model_cfg['kwargs'])
+
+    # 遍历参数搜索空间，动态调用 trial.suggest_* 方法
+    for param_name, param_config in param_space.items():
+        if param_config['type'] == 'uniform':
+            kwargs[param_name] = trial.suggest_uniform(param_name, param_config['low'], param_config['high'])
+        elif param_config['type'] == 'loguniform':
+            kwargs[param_name] = trial.suggest_loguniform(param_name, param_config['low'], param_config['high'])
+        elif param_config['type'] == 'int':
+            kwargs[param_name] = trial.suggest_int(param_name, param_config['low'], param_config['high'])
+
     task = {
         "model": {
-            "class": "LGBModel",
-            "module_path": "qlib.contrib.model.gbdt",
-            "kwargs": {
-                "loss": "mse",
-                "colsample_bytree": trial.suggest_uniform("colsample_bytree", 0.5, 1),
-                "learning_rate": trial.suggest_uniform("learning_rate", 0, 1),
-                "subsample": trial.suggest_uniform("subsample", 0, 1),
-                "lambda_l1": trial.suggest_loguniform("lambda_l1", 1e-8, 1e4),
-                "lambda_l2": trial.suggest_loguniform("lambda_l2", 1e-8, 1e4),
-                "max_depth": 10,
-                "num_leaves": trial.suggest_int("num_leaves", 1, 1024),
-                "feature_fraction": trial.suggest_uniform("feature_fraction", 0.4, 1.0),
-                "bagging_fraction": trial.suggest_uniform("bagging_fraction", 0.4, 1.0),
-                "bagging_freq": trial.suggest_int("bagging_freq", 1, 7),
-                "min_data_in_leaf": trial.suggest_int("min_data_in_leaf", 1, 50),
-                "min_child_samples": trial.suggest_int("min_child_samples", 5, 100),
-            },
+            "class": model_cfg['class'],
+            "module_path": model_cfg['module_path'],
+            "kwargs": kwargs,
         },
     }
     evals_result = dict()
     model = init_instance_by_config(task["model"])
     model.fit(dataset, evals_result=evals_result)
-  
+
     return min(evals_result["valid"]["l2"])
 
 
@@ -70,12 +85,10 @@ def _ensure_qlib_initialized():
         cfg = load_config_with_substitution(config_path)
         provider_uri = cfg['provider_uri']
 
-        # 减少并行工作进程数以降低内存使用
-        # 设置为1表示不使用并行处理，适合内存较小的环境
-        os.environ['QLIB_NUM_WORKERS'] = '1'
-        os.environ['NUMEXPR_MAX_THREADS'] = '1'
-        os.environ['OMP_NUM_THREADS'] = '1'
-        os.environ['MKL_NUM_THREADS'] = '1'
+        # 从配置文件读取环境变量设置
+        env_cfg = STATIC_CFG['environment']
+        for key, value in env_cfg.items():
+            os.environ[key] = value
 
         qlib.init(provider_uri=provider_uri, region="cn", kernels=1)
 
@@ -90,6 +103,48 @@ def _ensure_qlib_initialized():
         cfg = load_config_with_substitution(config_path)
 
     return cfg
+
+
+def _build_dataset_config(train_start, train_end, valid_start, valid_end, test_start, test_end):
+    """
+    根据配置文件和日期范围构建数据集配置
+    """
+    dataset_cfg = STATIC_CFG['dataset']
+    handler_cfg = dataset_cfg['handler']
+
+    return {
+        "class": dataset_cfg['class'],
+        "module_path": dataset_cfg['module_path'],
+        "kwargs": {
+            "handler": {
+                "class": handler_cfg['class'],
+                "module_path": handler_cfg['module_path'],
+                "kwargs": {
+                    "start_time": train_start,
+                    "end_time": test_end,
+                    "instruments": handler_cfg['instruments'],
+                },
+            },
+            "segments": {
+                "train": (train_start, train_end),
+                "valid": (valid_start, valid_end),
+                "test": (test_start, test_end),
+            },
+        },
+    }
+
+
+def _create_study(study_name):
+    """
+    根据配置文件创建 Optuna study
+    """
+    optuna_cfg = FREQUENT_CFG['optuna']
+    return optuna.create_study(
+        study_name=study_name,
+        storage=optuna_cfg['storage'],
+        load_if_exists=optuna_cfg['load_if_exists'],
+        direction=optuna_cfg['direction']
+    )
 
 
 def run_hyperparameter_optimization_auto():
@@ -121,33 +176,17 @@ def run_hyperparameter_optimization_auto():
     # 如果遇到内存错误，可以在配置文件中修改 train_start 日期
     train_end = str(last_workday_calculate(valid_start))
 
-    custom_dataset_config = {
-        "class": "DatasetH",
-        "module_path": "qlib.data.dataset",
-        "kwargs": {
-            "handler": {
-                "class": "Alpha158",
-                "module_path": "qlib.contrib.data.handler",
-                "kwargs": {
-                    "start_time": train_start,
-                    "end_time": test_end,
-                    "instruments": "all",
-                },
-            },
-            "segments": {
-                "train": (train_start, train_end),
-                "valid": (valid_start, valid_end),
-                "test": (test_start, test_end),
-            },
-        },
-    }
+    # 使用辅助函数构建数据集配置
+    custom_dataset_config = _build_dataset_config(train_start, train_end, valid_start, valid_end, test_start, test_end)
     dataset = init_instance_by_config(custom_dataset_config)
 
-    study = optuna.create_study(study_name="LGBM_158_auto", storage="sqlite:///db1.sqlite3", load_if_exists=True, direction="minimize")
+    # 使用辅助函数创建 study
+    optuna_cfg = FREQUENT_CFG['optuna']
+    study = _create_study(optuna_cfg['study_name_auto'])
 
     # R.start(experiment_name="lgbm_optuna", recorder_name="run_1")
     # 可以通过调整n_trials的数量，去控制模型训练次数
-    study.optimize(lambda trial: objective(trial, dataset), n_trials=2, n_jobs=1)
+    study.optimize(lambda trial: objective(trial, dataset), n_trials=optuna_cfg['n_trials'], n_jobs=optuna_cfg['n_jobs'])
 
 
     if len(study.trials) > 0 and getattr(study, "best_trial", None) is not None:
@@ -371,32 +410,16 @@ def _run_optimization_with_dates(train_start, train_end, valid_start, valid_end,
         test_start: 测试开始日期
         test_end: 测试结束日期
     """
-    custom_dataset_config = {
-        "class": "DatasetH",
-        "module_path": "qlib.data.dataset",
-        "kwargs": {
-            "handler": {
-                "class": "Alpha158",
-                "module_path": "qlib.contrib.data.handler",
-                "kwargs": {
-                    "start_time": train_start,
-                    "end_time": test_end,
-                    "instruments": "all",
-                },
-            },
-            "segments": {
-                "train": (train_start, train_end),
-                "valid": (valid_start, valid_end),
-                "test": (test_start, test_end),
-            },
-        },
-    }
+    # 使用辅助函数构建数据集配置
+    custom_dataset_config = _build_dataset_config(train_start, train_end, valid_start, valid_end, test_start, test_end)
     dataset = init_instance_by_config(custom_dataset_config)
 
-    study = optuna.create_study(study_name="LGBM_158_manual", storage="sqlite:///db1.sqlite3", load_if_exists=True, direction="minimize")
+    # 使用辅助函数创建 study
+    optuna_cfg = FREQUENT_CFG['optuna']
+    study = _create_study(optuna_cfg['study_name_manual'])
 
     # 可以通过调整n_trials的数量，去控制模型训练次数
-    study.optimize(lambda trial: objective(trial, dataset), n_trials=2, n_jobs=1)
+    study.optimize(lambda trial: objective(trial, dataset), n_trials=optuna_cfg['n_trials'], n_jobs=optuna_cfg['n_jobs'])
 
 
     if len(study.trials) > 0 and getattr(study, "best_trial", None) is not None:

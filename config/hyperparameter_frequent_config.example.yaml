@@ -1,0 +1,25 @@
+# 超参数优化 - 经常修改的配置
+# 这些配置是您在日常使用中可能经常调整的参数
+
+# Optuna 配置
+optuna:
+  # 自动优化模式的 study 名称
+  study_name_auto: "LGBM_158_auto"
+
+  # 手动优化模式的 study 名称
+  study_name_manual: "LGBM_158_manual"
+
+  # Optuna 数据库存储路径
+  storage: "sqlite:///db1.sqlite3"
+
+  # 优化方向: minimize (最小化) 或 maximize (最大化)
+  direction: "minimize"
+
+  # 每次优化的试验次数（控制模型训练次数）
+  n_trials: 2
+
+  # 并行作业数（建议设为1以降低内存使用）
+  n_jobs: 1
+
+  # 是否加载已存在的 study
+  load_if_exists: true
