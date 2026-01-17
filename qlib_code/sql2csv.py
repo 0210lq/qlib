@@ -27,6 +27,12 @@ from pathlib import Path
 from datetime import date
 import yaml
 
+# 添加项目根目录到 Python 路径，支持直接运行此脚本
+_script_dir = Path(__file__).resolve().parent
+_project_root = _script_dir.parent
+if str(_project_root) not in sys.path:
+    sys.path.insert(0, str(_project_root))
+
 # 导入重构后的模块
 from qlib_code.sql2csv_refactored import run_sql2csv
 from config_utils import load_config_with_substitution

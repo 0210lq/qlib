@@ -150,7 +150,7 @@ class QueryBuilder:
         # 为每个code创建占位符
         code_placeholders = ', '.join([f':code_{i}' for i in range(len(codes))])
 
-        # 构建SQL查询（指数的factor固定为1.0）
+        # 构建SQL查询（指数的factor固定为1.0，amount默认为0.0）
         query_str = f"""
             SELECT
                 {date_col} as date,
@@ -160,7 +160,7 @@ class QueryBuilder:
                 {low_col} as low,
                 {close_col} as close,
                 {volume_col} as volume,
-                {amount_col} as amount,
+                COALESCE({amount_col}, 0.0) as amount,
                 1.0 as factor
             FROM {table_name}
             WHERE {code_col} IN ({code_placeholders})
@@ -236,8 +236,8 @@ class QueryBuilder:
         """
 
         params = {
-            'start_date': start_date,
-            'end_date': end_date
+            'start_date': self._convert_date_format(start_date),
+            'end_date': self._convert_date_format(end_date)
         }
 
         self.logger.debug(f"Built all stocks query for date range: {start_date} - {end_date}")

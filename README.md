@@ -160,12 +160,20 @@ python_exe: "python"
 > **注意**: Qlib 源码已包含在项目的 `qlib/` 目录中，无需单独克隆。
 
 ```bash
-# 方式一：使用新版 SQL2CSV v2.0（推荐，性能提升 85.8%）
-python -c "from qlib_code.sql2csv_refactored import run_sql2csv; run_sql2csv(market='ALL', start_date='20150101')"
+# 方式一：使用完整流程脚本（推荐，包含 SQL→CSV→Qlib 格式转换）
+python -m qlib_code.sql2csv
 
-# 方式二：使用旧版（向后兼容）
-python qlib_code/sql2csv.py        # 从数据库导出
+# 方式二：分步执行（仅适用于特殊需求）
+# 步骤1: SQL → CSV (使用 SQL2CSV v2.0，性能提升 85.8%)
+python -c "from qlib_code.sql2csv_refactored import run_sql2csv; run_sql2csv(market='ALL', start_date='20150101')"
+# 步骤2: CSV → Qlib 二进制格式 (需手动执行 dump_bin.py)
+# python qlib/scripts/dump_bin.py dump_all --data_path=<csv_path> --qlib_dir=<qlib_bin_path>
 ```
+
+**说明**：
+- **方式一**（`python -m qlib_code.sql2csv`）会自动执行完整流程：SQL→CSV→Qlib 格式，**推荐使用**
+- **方式二** 的 `run_sql2csv()` 只执行 SQL→CSV 转换，需要手动执行第二步
+- 首次运行推荐使用方式一，确保数据完整转换
 
 **7. 模型训练与超参数调优**
 

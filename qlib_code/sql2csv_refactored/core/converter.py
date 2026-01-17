@@ -77,6 +77,25 @@ class DataConverter:
         except Exception as e:
             raise DataConversionError(f"Failed to format date: {date_value}, error: {e}") from e
 
+    def _is_valid_trading_day(self, row: Dict[str, Any]) -> bool:
+        """
+        检查是否为有效交易日（是否有完整的交易数据）
+
+        Args:
+            row: 数据行字典
+
+        Returns:
+            bool: True表示有完整的有效交易数据，False表示停牌或数据不完整
+        """
+        # 必需的交易字段：这些字段必须都有值才认为是有效交易日
+        # 注意：必须包含所有会被转换为float的字段
+        required_trading_fields = ['open', 'high', 'low', 'close', 'volume', 'amount']
+
+        # 检查是否所有必需字段都有值（不为None）
+        all_valid = all(row.get(field) is not None for field in required_trading_fields)
+
+        return all_valid
+
     def _validate_row(self, row: Dict[str, Any], data_type: str) -> None:
         """
         验证数据行的完整性
@@ -88,25 +107,23 @@ class DataConverter:
         Raises:
             DataValidationError: 数据验证失败
         """
-        # 核心字段：必须存在且不能为None
-        core_fields = ['date', 'code', 'close']
+        # 必须存在的字段
+        required_fields = ['date', 'code']
 
-        # 可选字段：可以为None（停牌、新股等情况）
-        optional_fields = ['open', 'high', 'low', 'volume', 'amount']
-
-        # 检查核心字段
-        missing_core = [field for field in core_fields if field not in row or row[field] is None]
-        if missing_core:
+        # 检查必需字段
+        missing_required = [field for field in required_fields if field not in row or row[field] is None]
+        if missing_required:
             raise DataValidationError(
-                f"Missing required fields in {data_type} data: {missing_core}",
+                f"Missing required fields in {data_type} data: {missing_required}",
                 data=row
             )
 
-        # 检查可选字段是否存在（可以为None）
-        missing_optional = [field for field in optional_fields if field not in row]
-        if missing_optional:
+        # 检查交易数据字段是否存在（可以为None）
+        trading_fields = ['open', 'high', 'low', 'close', 'volume', 'amount']
+        missing_fields = [field for field in trading_fields if field not in row]
+        if missing_fields:
             raise DataValidationError(
-                f"Missing fields in {data_type} data: {missing_optional}",
+                f"Missing fields in {data_type} data: {missing_fields}",
                 data=row
             )
 
@@ -144,9 +161,16 @@ class DataConverter:
         try:
             # 转换每一行数据
             converted_rows = []
+            skipped_count = 0
+
             for row in rows:
                 # 验证数据
                 self._validate_row(row, data_type)
+
+                # 检查是否为有效交易日（跳过停牌日）
+                if not self._is_valid_trading_day(row):
+                    skipped_count += 1
+                    continue
 
                 # 格式化日期
                 formatted_date = self._format_date(row['date'])
@@ -165,6 +189,10 @@ class DataConverter:
 
                 converted_rows.append(qlib_row)
 
+            # 记录跳过的停牌日数量
+            if skipped_count > 0:
+                self.logger.debug(f"Skipped {skipped_count} suspended/invalid trading days for {data_type}")
+
             # 创建DataFrame
             df = pd.DataFrame(converted_rows)
 
@@ -174,7 +202,7 @@ class DataConverter:
                 available_columns = [col for col in self.output_columns if col in df.columns]
                 df = df[available_columns]
 
-            self.logger.debug(f"Converted {len(rows)} {data_type} rows to DataFrame")
+            self.logger.debug(f"Converted {len(converted_rows)} valid rows from {len(rows)} total {data_type} rows to DataFrame")
             return df
 
         except (DataValidationError, DataConversionError):

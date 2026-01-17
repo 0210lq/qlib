@@ -32,9 +32,17 @@ class CSVFileManager:
         初始化CSV文件管理器
 
         Args:
-            output_dir: CSV输出目录路径
+            output_dir: CSV输出目录路径（支持相对路径，相对于项目根目录）
         """
-        self.output_dir = Path(output_dir)
+        output_path = Path(output_dir)
+        
+        # 如果是相对路径，转换为相对于项目根目录的绝对路径
+        if not output_path.is_absolute():
+            # 获取项目根目录（config目录的父目录）
+            project_root = Path(__file__).resolve().parent.parent.parent.parent
+            output_path = (project_root / output_path).resolve()
+        
+        self.output_dir = output_path
         self.logger = get_logger()
 
         # 确保输出目录存在

@@ -104,8 +104,7 @@ class DataPipeline:
             result = self._process_stocks(stock_codes, query_params)
 
             # 4. 处理指数数据
-            if query_params.market != 'ALL':
-                self._process_index(query_params)
+            self._process_index(query_params)
 
             # 5. 计算总耗时
             duration = time.time() - start_time
@@ -354,42 +353,57 @@ class DataPipeline:
 
         markets_config = self.config.markets
 
-        if market not in markets_config:
+        # 将 ConfigSection 转换为字典以避免 __contains__ 问题
+        markets_dict = markets_config.to_dict() if hasattr(markets_config, 'to_dict') else dict(markets_config)
+
+        if market not in markets_dict:
             self.logger.warning(f"Market {market} not found in configuration")
             return
 
-        market_info = markets_config[market]
-        index_code = market_info.get('index_code')
+        market_info = markets_dict[market]
 
-        if not index_code:
-            self.logger.warning(f"No index_code configured for market: {market}")
+        # 支持单个指数 (index_code) 或多个指数 (index_codes)
+        index_codes = None
+        if 'index_codes' in market_info:
+            # 多个指数（如 ALL 市场）
+            index_codes = market_info.get('index_codes')
+        elif 'index_code' in market_info:
+            # 单个指数（如 zz500, hs300 等）
+            index_codes = [market_info.get('index_code')]
+
+        if not index_codes:
+            self.logger.warning(f"No index_code or index_codes configured for market: {market}")
             return
 
-        try:
-            self.logger.info(f"Processing index: {index_code} for market: {market}")
+        self.logger.info(f"Processing {len(index_codes)} index(es) for market: {market}")
 
-            # 查询指数数据
-            query, params = self.query_builder.build_index_query(
-                [index_code],
-                query_params.start_date,
-                query_params.end_date
-            )
-            rows = self.db.execute_query_with_retry(query, params)
+        # 处理每个指数
+        for index_code in index_codes:
+            try:
+                self.logger.info(f"Processing index: {index_code}")
 
-            if not rows:
-                self.logger.warning(f"No data found for index: {index_code}")
-                return
+                # 查询指数数据
+                query, params = self.query_builder.build_index_query(
+                    [index_code],
+                    query_params.start_date,
+                    query_params.end_date
+                )
+                rows = self.db.execute_query_with_retry(query, params)
 
-            # 转换为DataFrame
-            df = self.converter.convert_to_dataframe(rows, 'index')
+                if not rows:
+                    self.logger.warning(f"No data found for index: {index_code}")
+                    continue
 
-            # 写入CSV文件
-            self.file_manager.write_csv(index_code, df)
+                # 转换为DataFrame
+                df = self.converter.convert_to_dataframe(rows, 'index')
 
-            self.logger.info(f"Successfully processed index: {index_code} ({len(df)} rows)")
+                # 写入CSV文件
+                self.file_manager.write_csv(index_code, df)
 
-        except Exception as e:
-            self.logger.error(f"Failed to process index {index_code}: {e}")
+                self.logger.info(f"Successfully processed index: {index_code} ({len(df)} rows)")
+
+            except Exception as e:
+                self.logger.error(f"Failed to process index {index_code}: {e}")
 
     def _determine_optimal_workers(self, total_items: int) -> int:
         """
